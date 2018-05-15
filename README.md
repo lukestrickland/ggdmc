@@ -172,9 +172,9 @@ https://github.com/TasCL/ggdmc
 
 ## Contributors
 
-The C++, R documentations, helper R codes and R pacakging are developed by 
+The documentation, C++ codes, R helper functions and pacakging are developed by 
 Yi-Shin Lin. The R codes (in DMC) are developed by Andrew Heathcote. If there 
-is any bug, please report to the [author](mailto:yishin.lin@utas.edu.au). 
+is any bug, please report to [me](mailto:yishin.lin@utas.edu.au). 
 
 ## License
 
