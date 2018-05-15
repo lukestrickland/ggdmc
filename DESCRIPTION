@@ -1,0 +1,30 @@
+Package: ggdmc
+Type: Package
+Title: Fast Dynamic Model of Choice
+Version: 0.1.9.7
+Date: 2018-05-15
+Author: Yi-Shin Lin [aut, cre], Andrew Heathcote [aut]
+Maintainer: Yi-Shin Lin <yishin.lin@utas.edu.au>
+Description: The 'ggdmc' package, evolving from dynamic model of choice (DMC,
+  Heathcote et al., 2018), is a generic tool for conducting hierarchical 
+  Bayesian computations (BC) on cognitive process, e.g., decision diffusion and 
+  linear ballistic accumultion, models with the differential evolution Markov 
+  chain Monte Carlo (DE-MCMC) sampler. In addition to using the fast sampler, 
+  'ggdmc' differs from the Python-based HDDM, by allowing the user to specify 
+  the variabilities of model parameters, e.g., drift rates and the start points 
+  in decision diffusion model as well as incorporating the features of 
+  specifying factorial designs found often in experimental psychology. 
+License: GPL-2
+URL: https://github.com/TasCL/ggdmc
+BugReports: https://github.com/TasCL/ggdmc/issues
+LazyData: TRUE
+Depends: R (>= 3.3.3)
+Imports: Rcpp (>= 0.12.10), ggplot2 (>= 2.1.0), coda, rtdists, 
+         gridExtra (>= 2.2-1), ggmcmc (>= 0.7.3), ggthemes, stats (>= 3.2.2), 
+         loo (>= 0.1.6), data.table (>= 1.10.4)
+LinkingTo: Rcpp (>= 0.12.10), RcppArmadillo (>= 0.7.100.3.0), BH
+RoxygenNote: 6.0.1
+NeedsCompilation: yes
+Packaged: 2018-05-15 14:23:00 UTC; yslin
+Repository: CRAN
+Date/Publication: 2018-05-15 14:23:00 UTC
