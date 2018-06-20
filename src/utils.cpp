@@ -95,7 +95,7 @@ LogicalVector MatchPPPriorName(List ppprior) {
   return Rf_match(munames, sigmanames, 0);
 }
 
-void SpreadSubs(List samples,
+void TransformSubjects(List samples,
   arma::field<arma::cube>& thetas,
   arma::field<arma::mat>& usethetas,
   arma::field<arma::mat>& logpriors,
@@ -116,29 +116,29 @@ void SpreadSubs(List samples,
 
   for (size_t i = 0; i < samples.size(); i++) {
     List subjecti      = samples[i];
-    List data          = subjecti["data"];     // extract data-model options
+    List data          = subjecti["data"];  // extract data-model options
     arma::vec RT       = data["RT"];
     arma::ucube model  = data.attr("model");
     unsigned int npda  = data.attr("n.pda");
     double bw          = data.attr("bw");
     unsigned int gpuid = data.attr("gpuid");
     NumericVector modelAttr = data.attr("model");
-    std::string type = modelAttr.attr("type");
+    std::string type = modelAttr.attr("type");      // model type
     arma::vec allpar = modelAttr.attr("all.par");
     List modelDim    = modelAttr.attr("dimnames");
     arma::umat n1idx = modelAttr.attr("n1.order");
     arma::uvec mc    = modelAttr.attr("match.cell");
     arma::uvec ise   = data.attr("cell.empty");
-    cellidxes(i) = cellIdx2Mat(data);
+    cellidxes(i)     = cellIdx2Mat(data);
     std::vector<std::string> parname = modelAttr.attr("par.names");
     std::vector<std::string> dim1 = modelDim[0]; // row;
     std::vector<std::string> dim2 = modelDim[1]; // col; parameters
     std::vector<std::string> dim3 = modelDim[2]; // slice; response types; r1, r2
     arma::uvec isr1 = GetIsR1(modelAttr, type);
 
-    arma::cube thetai    = subjecti["theta"]; // nchain x npar x nmc
-    arma::mat lpi  = subjecti["summed_log_prior"]; // nmc x nchain
-    arma::mat lli  = subjecti["log_likelihoods"];  // nmc x nchain
+    arma::cube thetai = subjecti["theta"]; // nchain x npar x nmc
+    arma::mat lpi     = subjecti["summed_log_prior"]; // nmc x nchain
+    arma::mat lli     = subjecti["log_likelihoods"];  // nmc x nchain
     unsigned int start   = subjecti["start"];        // R index
     unsigned int start_C = start - 1;
     store_i(i) = start - 1;
@@ -170,6 +170,7 @@ void SpreadSubs(List samples,
 
 void GetPrior(List pprior, std::vector<std::string>& dists, arma::vec& p1,
   arma::vec& p2, arma::vec& lower, arma::vec& upper, arma::uvec& islog) {
+
   std::vector<std::string> pnames = pprior.attr("names");
   List L1;
   for (size_t i = 0; i < pprior.size(); i++) {

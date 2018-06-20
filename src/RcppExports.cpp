@@ -1240,9 +1240,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dprior
-arma::vec dprior(arma::vec pvec, std::vector<std::string> dists, arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper, arma::uvec islog);
-RcppExport SEXP _ggdmc_dprior(SEXP pvecSEXP, SEXP distsSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP islogSEXP) {
+// dprior_
+arma::vec dprior_(arma::vec pvec, std::vector<std::string> dists, arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper, arma::uvec islog);
+RcppExport SEXP _ggdmc_dprior_(SEXP pvecSEXP, SEXP distsSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP islogSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1253,7 +1253,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type lower(lowerSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type upper(upperSEXP);
     Rcpp::traits::input_parameter< arma::uvec >::type islog(islogSEXP);
-    rcpp_result_gen = Rcpp::wrap(dprior(pvec, dists, p1, p2, lower, upper, islog));
+    rcpp_result_gen = Rcpp::wrap(dprior_(pvec, dists, p1, p2, lower, upper, islog));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1643,7 +1643,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_n1PDF_plba1", (DL_FUNC) &_ggdmc_n1PDF_plba1, 13},
     {"_ggdmc_n1PDF_plba2", (DL_FUNC) &_ggdmc_n1PDF_plba2, 14},
     {"_ggdmc_n1PDF_plba3", (DL_FUNC) &_ggdmc_n1PDF_plba3, 14},
-    {"_ggdmc_dprior", (DL_FUNC) &_ggdmc_dprior, 7},
+    {"_ggdmc_dprior_", (DL_FUNC) &_ggdmc_dprior_, 7},
     {"_ggdmc_dpriorNV", (DL_FUNC) &_ggdmc_dpriorNV, 2},
     {"_ggdmc_summedlogpriorNV", (DL_FUNC) &_ggdmc_summedlogpriorNV, 2},
     {"_ggdmc_sumlogprior", (DL_FUNC) &_ggdmc_sumlogprior, 7},

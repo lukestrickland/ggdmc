@@ -9,10 +9,11 @@
 \alias{MixTests}
 \alias{LengthTests}
 \alias{GetPLL}
-\title{Run sampling}
+\title{Fit a fixed-effect or hierarchical Bayesian models}
 \usage{
-run(samples, report = 100, ncore = 1, pm = 0.05, qm = 0.01,
-  gamma.mult = 2.38, ngroup = 3, force = FALSE, sampler = "DGMC")
+run(samples, report = 100, ncore = 1, pm = 0, qm = 0,
+  gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
+  debug = FALSE)
 
 CheckConverged(samples)
 
@@ -54,7 +55,12 @@ parallel. Turn it on by setting any number > 1.}
 a DMC sample with class c("list", "dmc")
 }
 \description{
-Run data-level Bayesian sampling.
+This function fit a hierarchical or a fixed-effect model, using Bayeisan
+sampling.  We use pMCMC, with a suite of DE-MCMC, DGMC, and simply,
+crossover (i.e., DE-MC), mutation, or migration operators. Note that
+the latter two operators essentially are random-walk Metroplolis, so they
+will be very inefficient, if been applied alone, even with our fast C++
+implementation.
 }
 \examples{
 m1 <- model.dmc(

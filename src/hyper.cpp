@@ -4,14 +4,22 @@ using namespace Rcpp;
 arma::vec UpdatePriors(arma::mat theta, std::vector<std::string> dists,
   arma::mat p1, arma::mat p2, arma::vec lower, arma::vec upper,
   arma::uvec islog) {
-  // theta represents many theta's from participants; nchain x npar
+  // theta is one of the subject's theta; nchain x npar
   // p1 = usephi[0]; p2 = usephi[1] // nchain x npar
   unsigned int nchain = theta.n_rows;
+  double tmp_lp;
   arma::vec out(nchain);
   for (size_t i = 0; i < nchain; i++) {
-    out(i) = sumlogprior(arma::trans(theta.row(i)), dists,
+    tmp_lp = sumlogprior(arma::trans(theta.row(i)), dists,
       arma::trans(p1.row(i)), arma::trans(p2.row(i)), lower, upper, islog);
+
+    if (std::isinf(tmp_lp) && tmp_lp > 0.0 ) {
+      out(i) = 1e-10;
+    } else {
+      out(i) = tmp_lp;
+    }
   }
+
   return out ;
 }
 
@@ -78,7 +86,7 @@ arma::vec UpdatePriors(arma::mat theta, std::vector<std::string> dists,
 arma::cube GetTheta0(List samples) {
   List samples0 = samples[0];
   unsigned int nsub   = samples.size();
-  unsigned int npar = samples0["n.pars"];
+  unsigned int npar   = samples0["n.pars"];
   unsigned int nchain = samples0["n.chains"];
   unsigned int start  = samples0["start"];  // Note start is an R index
   arma::cube out(nsub, npar, nchain);

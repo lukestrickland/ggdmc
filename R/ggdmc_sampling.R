@@ -255,7 +255,7 @@ CheckDMI <- function(data = NULL, p.prior = NULL, theta1 = NULL,
 
   if (!is.null(data) && !is.data.frame(data)) stop("Data must be a data frame")
   if (is.null(data)) stop("No data-model instance") else model <- attr(data, "model")
-  npar <- length(GetPnames(model))
+  npar <- length(GetPNames(model))
   if (is.null(nchain)) nchain <- 3*npar
 
   if (is.null(model)) stop("Must specify a model")
@@ -266,15 +266,14 @@ CheckDMI <- function(data = NULL, p.prior = NULL, theta1 = NULL,
 }
 
 ##' @export
-CheckSamples <- function(samples = NULL, p.prior = NULL, theta1 = NULL,
-  nchain = NULL) {
+CheckSamples <- function(samples = NULL, p.prior = NULL, theta1 = NULL) {
 
   if (is.null(samples)) stop("Must supply samples") else data <- samples$data
   if (!is.null(data) && !is.data.frame(data)) stop("Data must be a data frame")
   if (!is.null(samples) && is.null(samples$theta)) stop("Use StartHypersamples")
   if (is.null(data)) model <- attr(samples$data, "model") else model <- attr(data, "model")
-  npar <- length(GetPnames(model))
-  if (is.null(nchain)) nchain <- 3*npar
+  npar <- length(GetPNames(model))
+  nchain <- samples$n.chain
 
   if (is.null(model)) stop("Must specify a model")
   if (is.null(p.prior) && is.null(samples)) stop("Must specify a p.prior argument")
@@ -297,12 +296,6 @@ makeforce <- function(samples, force) {
 }
 
 ### Sampling  ----------------------------------------------------------------
-##' @export
-samples <- function(nmc, p.prior = NULL, data = NULL, thin = 1, samples = NULL,
-  theta1 = NULL, restart = TRUE, add = FALSE, remove = NA, start.from = NA,
-  start.prior = NULL, rp = .001, verbose = TRUE, replace.bad.chains = NULL,
-  n.chains = NULL) {
-}
 
 #' Initialize New Samples
 #'
@@ -366,7 +359,7 @@ StartNewsamples <- function(nmc, data = NULL, p.prior = NULL, thin = 1,
   theta1 = NULL, rp = .001, nchain = NULL) {
 
   model  <- CheckDMI(data, p.prior, theta1, nchain)
-  pnames <- GetPnames(model)
+  pnames <- GetPNames(model)
   npar   <- length(pnames)
   if (is.null(nchain)) nchain <- 3*npar
 
@@ -387,15 +380,14 @@ StartNewsamples <- function(nmc, data = NULL, p.prior = NULL, thin = 1,
 }
 
 ##' @export
-RestartSamples <- function(nmc, samples = NULL, p.prior = NULL, thin = NA,
-  theta1 = NULL, rp = .001, nchain = NULL, add = FALSE) {
+RestartSamples <- function(nmc, samples = NULL, p.prior = NULL, thin = NULL,
+  theta1 = NULL, rp = .001, add = FALSE) {
 
-  model  <- CheckSamples(samples, p.prior, theta1, nchain)
-  pnames <- GetPnames(model)
+  model  <- CheckSamples(samples, p.prior, theta1)
+  pnames <- GetPNames(model)
   npar   <- length(pnames)
-  if (is.null(nchain)) nchain <- 3*npar
   if (is.null(samples)) stop("Use StartNewsamples")
-  if (is.na(thin)) thin <- samples$thin
+  if (is.null(thin)) thin <- samples$thin
 
   if (is.null(attr(samples$data, "n.pda"))) attr(samples$data, "n.pda") <- 2^14
   if (is.null(attr(samples$data, "bw")))    attr(samples$data, "bw")    <- .01
@@ -403,9 +395,9 @@ RestartSamples <- function(nmc, samples = NULL, p.prior = NULL, thin = NA,
   if (is.null(attr(samples$data, "gpuid"))) attr(samples$data, "gpuid") <- 0
 
   if (add) {
-    out <- init_add(nmc, samples, thin, rp) # add onto existing one
+    out <- init_add(nmc, samples, rp, thin) # add onto existing one
   } else {
-    out <- init_old(nmc, samples, thin, rp) # start afresh
+    out <- init_old(nmc, samples, rp, thin) # start afresh
   }
   return(out)
 }
@@ -416,7 +408,7 @@ CheckHyperDMI <- function(data = NULL, nchain = NULL) {
   if (!is.list(data)) stop ("data must be a list")
   if (is.data.frame(data)) stop("data is a list with each if its elements is data.frame")
   model1 <- attr(data[[1]], "model")
-  pnames <- GetPnames(model1)
+  pnames <- GetPNames(model1)
   if (is.null(nchain)) nchain <- length(pnames)
   return(nchain)
 }
@@ -437,7 +429,7 @@ StartNewHypersamples <- function(nmc, data = NULL, p.prior = NULL,
     stop("Location priors must have as many or more elements than scale priors")
 
   model1 <- attr(data[[1]], "model")
-  pnames <- GetPnames(model1)
+  pnames <- GetPNames(model1)
   isppriorok <- pnames %in% names(p.prior)
   islpriorok <- pnames %in% names(pp.prior[[1]])
   isspriorok <- pnames %in% names(pp.prior[[2]])
@@ -557,11 +549,25 @@ hsamples <- function(nmc, p.prior = NULL, data = NULL, thin = NA, samples = NULL
   return(out)
 }
 
-#' @export
-run_one <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
-  gamma.mult = 2.38, ngroup = 5, force = FALSE, sampler = "DGMC") {
+##' Fit a Bayesian Model to a Single Participant
+##'
+##' Use either DE-MCMC or DGMC sampler to fit Bayesian model to a participant
+##'
+##' @param samples a initialized sample
+##' @param report progress report intervel
+##' @param ncore number of CPU cores
+##' @param pm probability of migration
+##' @param qm probability of mutation
+##' @param ngroup number of independent groups
+##' @param force PDA re-calculate interval
+##' @param sampler a string indicating to use which sampler
+##' @return Bayesian samples
+##' @export
+run_one <- function(samples, report, ncore, pm, qm, gammamult, ngroup, force,
+  sampler) {
+
   force  <- makeforce(samples, force)
-  pnames <- GetPnames(attr(samples$data, "model"))
+  pnames <- GetPNames(attr(samples$data, "model"))
 
   if (is.null(attr(samples$data, "n.pda"))) attr(samples$data, "n.pda") <- 2^14
   if (is.null(attr(samples$data, "bw")))    attr(samples$data, "bw")    <- .01
@@ -569,9 +575,9 @@ run_one <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
   if (is.null(attr(samples$data, "gpuid"))) attr(samples$data, "gpuid") <- 0
 
   if (sampler == "DGMC") {
-    out <- run_dgmc(samples, force, report, ncore, pm, qm, ngroup)
+    out <- run_dgmc(samples, force, report, pm, qm, gammamult, ncore, ngroup)
   } else if (sampler == "DE-MCMC") {
-    out <- run_dmc(samples, force, report, ncore, pm, gamma.mult)
+    out <- run_dmc(samples, force, report, pm, gammamult, ncore)
   } else {
     stop ("Sampler yet implemented")
   }
@@ -580,9 +586,25 @@ run_one <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
   return(out)
 }
 
-#' @export
-run_many <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
-  gamma.mult = 2.38, ngroup = 5, force = FALSE, sampler = "DGMC") {
+##' Fit a Bayesian Model to multiple Participants
+##'
+##' Use either DE-MCMC or DGMC sampler to fit independent Bayesian model to
+##' many participants.
+##'
+##' @param samples a initialized samples list. Each element should contain
+##' samples for a participant.
+##' @param report progress report intervel
+##' @param ncore number of CPU cores
+##' @param pm probability of migration
+##' @param qm probability of mutation
+##' @param ngroup number of independent groups
+##' @param force PDA re-calculate interval
+##' @param sampler a string indicating to use which sampler
+##' @return Bayesian samples
+##' @export
+##' @export
+run_many <- function(samples, report, ncore, pm, qm, gammamult, ngroup,
+  force, sampler) {
 
   force <- makeforce(samples[[1]], force)
   for(i in 1:length(samples)) {
@@ -593,32 +615,36 @@ run_many <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
   }
 
   if (get_os() == "windows" & ncore > 1) {
-    cl  <- makeCluster(ncore)
+    cl  <- parallel::makeCluster(ncore)
     if (sampler == "DGMC") {
-      out <- parallel::parLapply(cl, samples, run_dgmc, force, report, ncore, pm, qm, ngroup)
+      out <- parallel::parLapply(cl, samples, run_dgmc, force, report, pm, qm,
+        gammamult, ncore, ngroup)
     } else if (sampler == "DE-MCMC") {
-      out <- parallel::parLapply(cl, samples, run_dmc, force, report, ncore, pm, gamma.mult)
+
+      out <- parallel::parLapply(cl, samples, run_dmc, force, report, pm,
+        gammamult, ncore)
     } else {
-      stop ("Sampler unknown")
+      stop("Sampler unknown")
     }
     stopCluster(cl)
 
   } else if (ncore > 1) {
     if (sampler == "DGMC") {
-      out <- parallel::mclapply(samples, run_dgmc, force, report, ncore, pm, qm,
-        ngroup, mc.cores=ncore)
+      out <- parallel::mclapply(samples, run_dgmc, force, report, pm, qm,
+        gammamult, ncore, ngroup, mc.cores=ncore)
     } else if (sampler == "DE-MCMC") {
-      out <- parallel::mclapply(samples, run_dmc, force, report, ncore, pm,
-        gamma.mult, mc.cores=ncore)
+      out <- parallel::mclapply(samples, run_dmc, force, report, pm,
+        gammamult, ncore, mc.cores=ncore)
     } else {
-      stop ("Sampler unknown")
+      stop("Sampler unknown")
     }
 
   } else {
     if (sampler == "DGMC") {
-      out <- lapply(samples, run_dgmc,  force, report, ncore, pm, qm, ngroup)
+      out <- lapply(samples, run_dgmc, force, report, pm, qm, gammamult, ncore,
+        ngroup)
     } else if (sampler == "DE-MCMC") {
-      out <- lapply(samples, run_dmc, force, report, ncore, pm, gamma.mult)
+      out <- lapply(samples, run_dmc, force, report, pm, gammamult, ncore)
     } else {
       stop ("Sampler unknown")
     }
@@ -630,9 +656,14 @@ run_many <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
   return(out)
 }
 
-#' Run sampling
+#' Fit a fixed-effect or hierarchical Bayesian models
 #'
-#' Run data-level Bayesian sampling.
+#' This function fit a hierarchical or a fixed-effect model, using Bayeisan
+#' sampling.  We use pMCMC, with a suite of DE-MCMC, DGMC, and simply,
+#' crossover (i.e., DE-MC), mutation, or migration operators. Note that
+#' the latter two operators essentially are random-walk Metroplolis, so they
+#' will be very inefficient, if been applied alone, even with our fast C++
+#' implementation.
 #'
 #' @param samples a sample list generated by calling DMC's samples.dmc.
 #' @param report how many iterations to return a report
@@ -725,14 +756,25 @@ run_many <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
 #' ggdmc:::check.recovery.dmc(s1, pvec1)
 #' }
 #' @export
-run <- function(samples, report = 1e2, ncore = 1, pm = 0.05, qm = 0.01,
-  gamma.mult = 2.38, ngroup = 3, force = FALSE, sampler = "DGMC")
-{
-  if (any(names(samples) == "theta")) { ## One subject
-    out <- run_one(samples, report, ncore, pm, qm, gamma.mult, ngroup, force, sampler)
+run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
+  gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
+  debug = FALSE) {
+
+  hyper <- attr(samples, "hyper")
+
+  if (!is.null(hyper)) {   ## hierarchical model
+    if (is.null(attr(samples[[1]]$data, "bw"))) stop("No GPU attributes")
+    if (is.null(attr(samples[[1]]$data, "gpuid"))) stop("No GPU attributes")
+
+    out <- run_hyper_dmc(samples, report, pm, gamma.mult, ncore, debug)
+  } else if (any(names(samples) == "theta")) { ## One subject
+    out <- run_one(samples, report, ncore, pm, qm, gamma.mult, ngroup, force,
+      sampler)
   } else {  ## Multiple independent subjects
-    out <- run_many(samples, report, ncore, pm, qm, gamma.mult, ngroup, force, sampler)
+    out <- run_many(samples, report, ncore, pm, qm, gamma.mult, ngroup, force,
+      sampler)
   }
+
   cat("\n")
   return(out)
 }

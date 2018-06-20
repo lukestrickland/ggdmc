@@ -408,47 +408,47 @@ StartIteration <- function(samples) {
 }
 
 #' @export
-init_new <- function(nmc, pprior, data, rp = .001, thin = 1L, nchain = 3L, ncore = 1L, debug = FALSE) {
+init_new <- function(nmc, pprior, data, rp, thin, nchain, ncore = 1L, debug = FALSE) {
     .Call('_ggdmc_init_new', PACKAGE = 'ggdmc', nmc, pprior, data, rp, thin, nchain, ncore, debug)
 }
 
 #' @export
-init_old <- function(nmc, samples, rp = .001, thin = 1L) {
+init_old <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_old', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
 #' @export
-init_add <- function(nmc, samples, rp = .001, thin = 1L) {
+init_add <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_add', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
 #' @export
-init_newnonhier <- function(nmc, data, pprior, rp = .001, thin = 1L, nchain = 3L) {
+init_newnonhier <- function(nmc, data, pprior, rp, thin, nchain) {
     .Call('_ggdmc_init_newnonhier', PACKAGE = 'ggdmc', nmc, data, pprior, rp, thin, nchain)
 }
 
 #' @export
-init_oldnonhier <- function(nmc, samples, rp = .001, thin = 1L) {
+init_oldnonhier <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_oldnonhier', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
 #' @export
-init_addnonhier <- function(nmc, samples, rp = .001, thin = 1L) {
+init_addnonhier <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_addnonhier', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
 #' @export
-init_newhier <- function(nmc, data, pprior, ppprior, rp = .001, thin = 1L, nchain = 3L) {
+init_newhier <- function(nmc, data, pprior, ppprior, rp, thin, nchain) {
     .Call('_ggdmc_init_newhier', PACKAGE = 'ggdmc', nmc, data, pprior, ppprior, rp, thin, nchain)
 }
 
 #' @export
-init_oldhier <- function(nmc, samples, rp = .001, thin = 1L) {
+init_oldhier <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_oldhier', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
 #' @export
-init_addhier <- function(nmc, samples, rp = .001, thin = 1L) {
+init_addhier <- function(nmc, samples, rp, thin) {
     .Call('_ggdmc_init_addhier', PACKAGE = 'ggdmc', nmc, samples, rp, thin)
 }
 
@@ -709,24 +709,21 @@ n1PDF_plba3 <- function(x, n, A, B, C, mean_v, sd_v, mean_w, sd_w, rD, tD, swt, 
 #' ## ggdmc::dprior         10.128  11.665  13.55588   12.712  15.226   71.170
 #' ## log.prior.dmc         96.173 102.774 108.06765  105.533 107.628 2080.882
 #' @export
-dprior <- function(pvec, dists, p1, p2, lower, upper, islog) {
-    .Call('_ggdmc_dprior', PACKAGE = 'ggdmc', pvec, dists, p1, p2, lower, upper, islog)
+dprior_ <- function(pvec, dists, p1, p2, lower, upper, islog) {
+    .Call('_ggdmc_dprior_', PACKAGE = 'ggdmc', pvec, dists, p1, p2, lower, upper, islog)
 }
 
-#' @rdname dprior
 #' @export
 dpriorNV <- function(pvec, prior) {
     .Call('_ggdmc_dpriorNV', PACKAGE = 'ggdmc', pvec, prior)
 }
 
 #' @export
-#' @rdname dprior
 summedlogpriorNV <- function(pvec, prior) {
     .Call('_ggdmc_summedlogpriorNV', PACKAGE = 'ggdmc', pvec, prior)
 }
 
 #' @export
-#' @rdname dprior
 sumlogprior <- function(pvec, dists, p1, p2, lower, upper, islog) {
     .Call('_ggdmc_sumlogprior', PACKAGE = 'ggdmc', pvec, dists, p1, p2, lower, upper, islog)
 }
@@ -840,18 +837,6 @@ SelectEmigrants <- function(ngroup, k) {
     .Call('_ggdmc_SelectEmigrants', PACKAGE = 'ggdmc', ngroup, k)
 }
 
-#' Fit a Bayesian Model to Data
-#'
-#' run_dgmc runs Bayesian modelling with DGMC sampler.
-#'
-#' @param samples a initialized sample
-#' @param force PDA re-calculate interval
-#' @param report progress report intervel
-#' @param ncore number of CPU cores
-#' @param pm probability of migration
-#' @param qm probability of mutation
-#' @param ngroup number of independent groups
-#' @return Bayesian samples
 #' @export
 run_dgmc <- function(samples, force, report, pm, qm, gammamult, ncore, ngroup) {
     .Call('_ggdmc_run_dgmc', PACKAGE = 'ggdmc', samples, force, report, pm, qm, gammamult, ncore, ngroup)
@@ -863,7 +848,7 @@ run_dmc <- function(samples, force, report, pm, gammamult, ncore) {
 }
 
 #' @export
-run_hyper_dmc <- function(samples, report = 100L, pm = 0, gammamult = 2.38, ncore = 1L, debug = FALSE) {
+run_hyper_dmc <- function(samples, report, pm, gammamult, ncore, debug) {
     .Call('_ggdmc_run_hyper_dmc', PACKAGE = 'ggdmc', samples, report, pm, gammamult, ncore, debug)
 }
 

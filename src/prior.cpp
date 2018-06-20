@@ -109,9 +109,9 @@ using namespace Rcpp;
 //' ## log.prior.dmc         96.173 102.774 108.06765  105.533 107.628 2080.882
 //' @export
 // [[Rcpp::export]]
-arma::vec dprior(arma::vec pvec,
-  std::vector<std::string> dists, arma::vec p1, arma::vec p2,
-  arma::vec lower, arma::vec upper, arma::uvec islog)
+arma::vec dprior_(arma::vec pvec, std::vector<std::string> dists,
+  arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper,
+  arma::uvec islog)
 {
   unsigned int npar = dists.size();
   std::string dist1 ("tnorm");  // Available pdf' in DMC
@@ -126,7 +126,7 @@ arma::vec dprior(arma::vec pvec,
   {
     if ( dists[i].compare(dist1) == 0 ) {         // tnorm
       l = std::isnan(lower[i]) ? -INFINITY : lower[i];
-      u = std::isnan(upper[i]) ?  INFINITY : upper[i];
+      u = std::isnan(upper[i]) ? INFINITY : upper[i];
       x = pvec[i];
       out[i] = dtn_scalar(x, p1[i], p2[i], l, u, islog[i]);
     } else if ( dists[i].compare(dist2) == 0) {  // beta_ul
@@ -146,18 +146,16 @@ arma::vec dprior(arma::vec pvec,
     } else if (dists[i].compare(dist5) == 0) {  // constant
       out[i] = islog[i] ? 0 : 1;
     } else {
-      Rcpp::Rcout << "Distribution type not yet supported" << "\n";
+      Rcout << "Distribution type not yet supported" << "\n";
       out[i] = 1e-10;
     }
   }
   return out;
 }
 
-//' @rdname dprior
 //' @export
 // [[Rcpp::export]]
-NumericVector dpriorNV(NumericVector pvec, List prior)
-{
+NumericVector dpriorNV(NumericVector pvec, List prior) {
   List l1;   // a container to loop through inner list
   std::vector<std::string> pnames = pvec.names() ;
   NumericVector out = NumericVector(pvec.size());
@@ -217,10 +215,8 @@ NumericVector dpriorNV(NumericVector pvec, List prior)
 }
 
 //' @export
-//' @rdname dprior
 // [[Rcpp::export]]
-double summedlogpriorNV(arma::vec pvec, List prior)
-{
+double summedlogpriorNV(arma::vec pvec, List prior) {
   NumericVector pvecNV  = as<NumericVector>(wrap(pvec)) ;
   std::vector<std::string> pnames = prior.names() ;
   pvecNV.names() = pnames;
@@ -228,12 +224,12 @@ double summedlogpriorNV(arma::vec pvec, List prior)
 }
 
 //' @export
-//' @rdname dprior
 // [[Rcpp::export]]
-double sumlogprior(arma::vec pvec,
-  std::vector<std::string> dists, arma::vec p1, arma::vec p2,
-  arma::vec lower, arma::vec upper, arma::uvec islog) {
-  arma::vec den = dprior(pvec, dists, p1, p2, lower, upper, islog);
+double sumlogprior(arma::vec pvec, std::vector<std::string> dists,
+  arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper,
+  arma::uvec islog) {
+
+  arma::vec den = dprior_(pvec, dists, p1, p2, lower, upper, islog);
   double out = arma::accu(den);
   if (std::isnan(out)) out = -INFINITY;
   return out;

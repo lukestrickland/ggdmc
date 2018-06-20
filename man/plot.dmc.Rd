@@ -5,7 +5,7 @@
 \title{Plot DMC Samples}
 \usage{
 \method{plot}{dmc}(x, y = NULL, start = 1, end = NA, save.ll = FALSE,
-  main.pll = NULL, pll.chain = FALSE, pll.together = TRUE,
+  main.pll = NULL, pll.chain = TRUE, pll.together = TRUE,
   pll.barplot = FALSE, only.prior = FALSE, only.like = FALSE,
   smooth = FALSE, density = FALSE, save.dat = FALSE, p.prior = NULL,
   natural = TRUE, trans = NA, xlim = NA, chain1 = TRUE, ...)

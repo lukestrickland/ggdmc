@@ -5,7 +5,7 @@
 \alias{rprior_mat}
 \alias{rprior_vec}
 \alias{rprior}
-\title{The Prior Distributions}
+\title{Parameter Prior Distributions}
 \usage{
 rprior_scalar(prior)
 
@@ -13,12 +13,9 @@ rprior_mat(prior, n)
 
 rprior_vec(dists, p1, p2, lower, upper)
 
-rprior(prior, n = 1)
+rprior(p.prior, n = 1)
 }
 \arguments{
-\item{prior}{a list of list usually created by BuildPrior to store the
-parameters for prior distributions.}
-
 \item{n}{number of observations/random draws}
 
 \item{dists}{dists argument in BuildPrior}
@@ -31,6 +28,9 @@ parameters for prior distributions.}
 
 \item{upper}{upper argument in prior.p.dmc}
 
+\item{p.prior}{a list of list usually created by BuildPrior to store the
+information about parameter prior distributions.}
+
 \item{pvec}{a parameter vector}
 }
 \value{
@@ -40,22 +40,17 @@ matrix; \code{rprior_scalar} gives a named numeric vector.
 \code{sum_log_prior} gives prior likelihood.
 }
 \description{
-Density functions and random generation for different prior distributions.
-\code{rprior} is compatible with \code{rprior.dmc} in \code{DMC} and
-faster. It is a wrapper function for \code{rprior_scalar} and
-\code{rprior_mat} functions. \code{rprior_scalar} matches five strings:
+Probability density functions and random generation for parameter prior
+distributions. \code{rprior} is a faster compatible function, like
+\code{rprior.dmc} in \code{DMC}. It is a wrapper function for
+\code{rprior_scalar} and \code{rprior_mat} functions.
+\code{rprior_scalar} matches five strings:
 \code{tnorm}, \code{beta_lu}, \code{gamma_l}, \code{lnorm_l}, and
-\code{constant} to select an appropriate random functions.
-}
-\details{
-\code{sum_log_prior} and \code{sumlogprior} calculates sum-log prior
-probabilities. The former takes a p.vector and p.prior as inputs. The
-latter, internal function, takes a p.vector and each element in p.prior,
-separately.
+\code{constant} to select a random functions.
 }
 \examples{
-p.prior <- BuildPrior(
-dists = c("tnorm", "tnorm", "beta", "tnorm", "beta", "beta"),
+p.prior <- ggdmc::BuildPrior(
+ dists = c("tnorm", "tnorm", "beta", "tnorm", "beta", "beta"),
  p1    = c(a = 1, v = 0, z = 1, sz = 1, sv = 1, t0 = 1),
  p2    = c(a = 1, v = 2, z = 1, sz = 1, sv = 1, t0 = 1),
  lower = c(0,-5, NA, NA, 0, NA),
@@ -81,7 +76,7 @@ p.prior  <- BuildPrior(
   lower = c(0,-5, 0, 0, 0, 0),
   upper = c(5, 7, 2, 2, 2, 2))
 
-summed_log_prior(pvec, p.prior)
+## summed_log_prior(pvec, p.prior)
 
 \dontrun{
 setwd("/home/yslin/Documents/dmc-amsterdam17/")

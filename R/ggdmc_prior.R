@@ -1,37 +1,37 @@
-#' Specify Prior Distributions
-#'
-#' \code{BuildPrior} sets up prior distributions separately for each model
-#' parameter. \code{p1} and \code{p2} refer to the first and second parameters
-#' for prior distributions.
-#'
-#' Four distributions are available:
-#' \enumerate{
-#' \item Truncated normal, where: p1 = mean, p2 = sd. This becomes to normal
-#' distribution when bounds are set -Inf and Inf,
-#' \item Beta, where: p1 = shape1 and p2 = shape2 (see \link{pbeta}. Note the
-#'       uniform distribution is a special case of the beta with p1 and
-#'       p2 = 1),
-#' \item Gamma, where p1 = shape and p2 = scale (see \link{pgamma}). Note p2 is
-#'       scale, NOT rate,
-#' \item Lognormal, where p1 = meanlog and p2 = sdlog (see \link{plnorm}).
-#' }
-#'
-#' @param p1 the first parameter of a prior distribution
-#' @param p2 the second parameter of a prior distribution
-#' @param lower lower support boundary
-#' @param upper upper support boundary
-#' @param dists a character string indicating which distribution.
-#' @param untrans whether to do log transformation. Default is not
-#' @param types available distribution types
-#' @return a list of list
-#' @export
+##' Specifying Parameter Prior Distributions
+##'
+##' \code{BuildPrior} sets up parameter prior distributions for each model
+##' parameter. \code{p1} and \code{p2} refer to the first and second parameters
+##' a prior distribution.
+##'
+##' Four distribution types are implemented:
+##' \enumerate{
+##' \item Normal and truncated normal, where: p1 = mean, p2 = sd. It specifies
+##' a normal distribution when bounds are set -Inf and Inf,
+##' \item Beta, where: p1 = shape1 and p2 = shape2 (see \link{pbeta}). Note the
+##'       uniform distribution is a special case of the beta with p1 and
+##'       p2 = 1),
+##' \item Gamma, where p1 = shape and p2 = scale (see \link{pgamma}). Note p2 is
+##'       scale, not rate,
+##' \item Lognormal, where p1 = meanlog and p2 = sdlog (see \link{plnorm}).
+##' }
+##'
+##' @param dists a vector of character string specifying a distribution.
+##' @param p1 the first parameter of a distribution
+##' @param p2 the second parameter of a distribution
+##' @param lower lower support (boundary)
+##' @param upper upper support (boundary)
+##' @param untrans whether to do log transformation. Default is not
+##' @param types available distribution types
+##' @return a list of list
+##' @export
 BuildPrior <- function(p1, p2,
   lower   = rep(NA, length(p1)),
   upper   = rep(NA, length(p1)),
   dists   = rep("tnorm", length(p1)),
   untrans = rep("identity", length(p1)),
-  types   = c("tnorm", "beta", "gamma", "lnorm", "cauchy", "constant"))
-{
+  types   = c("tnorm", "beta", "gamma", "lnorm", "cauchy", "constant")) {
+
   dist <- c()
   np1 <- length(p1)
 
@@ -109,24 +109,20 @@ BuildPrior <- function(p1, p2,
   return(prior)
 }
 
-##' The Prior Distributions
+##' Parameter Prior Distributions
 ##'
-##' Density functions and random generation for different prior distributions.
-##' \code{rprior} is compatible with \code{rprior.dmc} in \code{DMC} and
-##' faster. It is a wrapper function for \code{rprior_scalar} and
-##' \code{rprior_mat} functions. \code{rprior_scalar} matches five strings:
+##' Probability density functions and random generation for parameter prior
+##' distributions. \code{rprior} is a faster compatible function, like
+##' \code{rprior.dmc} in \code{DMC}. It is a wrapper function for
+##' \code{rprior_scalar} and \code{rprior_mat} functions.
+##' \code{rprior_scalar} matches five strings:
 ##' \code{tnorm}, \code{beta_lu}, \code{gamma_l}, \code{lnorm_l}, and
-##' \code{constant} to select an appropriate random functions.
+##' \code{constant} to select a random functions.
 ##'
-##' \code{sum_log_prior} and \code{sumlogprior} calculates sum-log prior
-##' probabilities. The former takes a p.vector and p.prior as inputs. The
-##' latter, internal function, takes a p.vector and each element in p.prior,
-##' separately.
-##'
-##' @param prior a list of list usually created by BuildPrior to store the
-##' parameters for prior distributions.
-##' @param pvec a parameter vector
+##' @param p.prior a list of list usually created by BuildPrior to store the
+##' information about parameter prior distributions.
 ##' @param n number of observations/random draws
+##' @param pvec a parameter vector
 ##' @param dists dists argument in BuildPrior
 ##' @param p1 p1 argument in prior.p.dmc
 ##' @param p2 p2 argument in prior.p.dmc
@@ -138,8 +134,8 @@ BuildPrior <- function(p1, p2,
 ##' \code{sum_log_prior} gives prior likelihood.
 ##'
 ##' @examples
-##' p.prior <- BuildPrior(
-##' dists = c("tnorm", "tnorm", "beta", "tnorm", "beta", "beta"),
+##' p.prior <- ggdmc::BuildPrior(
+##'  dists = c("tnorm", "tnorm", "beta", "tnorm", "beta", "beta"),
 ##'  p1    = c(a = 1, v = 0, z = 1, sz = 1, sv = 1, t0 = 1),
 ##'  p2    = c(a = 1, v = 2, z = 1, sz = 1, sv = 1, t0 = 1),
 ##'  lower = c(0,-5, NA, NA, 0, NA),
@@ -165,7 +161,7 @@ BuildPrior <- function(p1, p2,
 ##'   lower = c(0,-5, 0, 0, 0, 0),
 ##'   upper = c(5, 7, 2, 2, 2, 2))
 ##'
-##' summed_log_prior(pvec, p.prior)
+##' ## summed_log_prior(pvec, p.prior)
 ##'
 ##' \dontrun{
 ##' setwd("/home/yslin/Documents/dmc-amsterdam17/")
@@ -184,20 +180,25 @@ BuildPrior <- function(p1, p2,
 ##' ##  44.7700   98.897  1000
 ##' ## 376.3445 2446.987  1000
 ##' @export
-rprior <- function(prior, n = 1) {
-  if(n == 1) { out <- rprior_scalar(prior) }
-  else       { out <- rprior_mat(prior, n) }
+rprior <- function(p.prior, n = 1) {
+  if(n == 1) { out <- rprior_scalar(p.prior) }
+  else       { out <- rprior_mat(p.prior, n) }
   return(out)
 }
 
-# SumLogprior <- function (p.vector, p.prior) {
-# if(!is.null(p.names)) {names(p.vector) <- p.names}
-# if( length(p.vector) == 0 | length(p.prior) == 0)
-#   stop("p.vector or p.prior length == 0. check summed.log.prior\n")
-# sumlogpriorNV
-# out <- sum(dpriorNV(p.vector, p.prior))
-# return(out)
+
+# dprior <- function(pvec, prior) {
+#
+#   dists <- c("tnorm", "tnorm", "beta", "tnorm", "beta", "beta")
+#   dists_internal <- c("tnorm", "tnorm", "beta_lu", "tnorm", "beta_lu", "beta_lu")
+#   p1    <- c(a = 1, v = 0, z = 1, sz = 1, sv = 1, t0 = 1)
+#   p2    <- c(a = 1, v = 2, z = 1, sz = 1, sv = 1, t0 = 1)
+#   lower <- c(0, -5, NA, NA, 0, NA)
+#   upper <- c(2,  5, NA, NA, 2, NA)
+#   islog <- rep(1, 6)
+#   pvec  <- c(a = 1.15, v = -.10, z = .74, sz = 1.23, sv = .11, t0 = .87)
+#   pnames <- names(pvec); pnames
+#   p.prior <- ggdmc::BuildPrior(dists = dists, p1 = p1, p2 = p2, lower = lower,
+#     upper = upper)
+#
 # }
-
-# log.prior.dmc <- function(p.vector, p.prior) { logpriordmc(p.vector, p.prior) }
-

@@ -4,8 +4,8 @@ using namespace Rcpp;
 
 //' @export
 // [[Rcpp::export]]
-List init_new(unsigned int nmc, List pprior, List data, double rp = .001,
-  unsigned int thin = 1, unsigned int nchain = 3, unsigned int ncore = 1,
+List init_new(unsigned int nmc, List pprior, List data, double rp,
+  unsigned int thin, unsigned int nchain, unsigned int ncore = 1,
   bool debug = false) {
   arma::ucube model  = data.attr("model"); // do not have attributes
   unsigned int npda  = data.attr("n.pda");
@@ -78,8 +78,8 @@ List init_new(unsigned int nmc, List pprior, List data, double rp = .001,
 
 //' @export
 // [[Rcpp::export]]
-List init_old(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_old(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
   List samples_in(clone(samples));
   arma::cube theta = samples_in["theta"];
   arma::mat slp    = samples_in["summed_log_prior"];
@@ -116,8 +116,8 @@ List init_old(unsigned int nmc, List samples, double rp = .001,
 
 //' @export
 // [[Rcpp::export]]
-List init_add(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_add(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
     List samples_in(clone(samples));
     arma::cube theta = samples_in["theta"];
     arma::mat slp    = samples_in["summed_log_prior"];
@@ -156,12 +156,16 @@ List init_add(unsigned int nmc, List samples, double rp = .001,
 //' @export
 // [[Rcpp::export]]
 List init_newnonhier(unsigned int nmc, List data, List pprior,
-  double rp = .001, unsigned int thin = 1, unsigned int nchain = 3) {
+  double rp, unsigned int thin, unsigned int nchain) {
 
   List out(data.size());
   for (size_t i = 0; i < data.size(); i++) {
     out[i] = init_new(nmc, pprior, data[i], rp, thin, nchain);
   }
+
+  // List init_new(unsigned int nmc, List pprior, List data, double rp = .001,
+  //   unsigned int thin = 1, unsigned int nchain = 3, unsigned int ncore = 1,
+  //   bool debug = false)
 
   out.attr("names") = data.attr("names");
   return out;
@@ -169,8 +173,8 @@ List init_newnonhier(unsigned int nmc, List data, List pprior,
 
 //' @export
 // [[Rcpp::export]]
-List init_oldnonhier(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_oldnonhier(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
   List out(samples.size());
   for (size_t i = 0; i < samples.size(); i++) {
     out[i] = init_old(nmc, samples[i], rp, thin);
@@ -182,8 +186,8 @@ List init_oldnonhier(unsigned int nmc, List samples, double rp = .001,
 
 //' @export
 // [[Rcpp::export]]
-List init_addnonhier(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_addnonhier(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
   List out(samples.size());
   for (size_t i = 0; i < samples.size(); i++) {
     out[i] = init_add(nmc, samples[i], rp, thin);
@@ -195,7 +199,7 @@ List init_addnonhier(unsigned int nmc, List samples, double rp = .001,
 //' @export
 // [[Rcpp::export]]
 List init_newhier(unsigned int nmc, List data, List pprior, List ppprior,
-  double rp = .001,  unsigned int thin = 1, unsigned int nchain = 3) {
+  double rp,  unsigned int thin, unsigned int nchain) {
 
   List data0 = data[0];  // Temporary measure to save PDA options
   unsigned int npda  = data0.attr("n.pda");
@@ -287,8 +291,8 @@ List init_newhier(unsigned int nmc, List data, List pprior, List ppprior,
 
 //' @export
 // [[Rcpp::export]]
-List init_oldhier(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_oldhier(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
 
   List samples_in(clone(samples));
   unsigned int nsub  = samples_in.size();
@@ -349,8 +353,8 @@ List init_oldhier(unsigned int nmc, List samples, double rp = .001,
 
 //' @export
 // [[Rcpp::export]]
-List init_addhier(unsigned int nmc, List samples, double rp = .001,
-  unsigned int thin = 1) {
+List init_addhier(unsigned int nmc, List samples, double rp,
+  unsigned int thin) {
 
   List samples_in(clone(samples));
   unsigned int nsub  = samples_in.size();

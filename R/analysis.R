@@ -108,22 +108,23 @@ unstick <- function(samples, bad)
 #' When \code{split} switch is TRUE, the function doubles number of chains,
 #' first and second half.
 #'
-#' @param samples a DMC sample
-#' @param hyper a hyper attribute extracted from an hierarchical sample
+#' @param samples a sample list
 #' @param start start iteration
 #' @param end end iteraton
-#' @param split a boolean indicating to split MCMC chains.
-#' @param thin thinning length
+#' @param split whether to divide one MCMC sequence into two sequences.
 #' @importFrom coda mcmc mcmc.list
 #' @export
-theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE, thin = 1)
+theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE)
 {
-  if ( is.na(end) ) end <- dim(samples$theta)[3]
-  n.chains <- dim(samples$theta)[1]
-  lst  <- vector(mode = "list", length = n.chains * ifelse(split, 2, 1))
-  indx <- start:end
-  if (split) is.in <- !as.logical(indx %% 2) else
-    is.in <- rep(TRUE, length(indx))
+  thin   <- samples$thin
+  nchain <- samples$n.chains
+  if (is.na(end)) end <- samples$nmc
+
+  lst <- vector(mode = "list", length = nchain * ifelse(split, 2, 1))
+  idx <- start:end
+
+  if (split) is.in <- !as.logical(idx %% 2) else is.in <- rep(TRUE, length(idx))
+
   if (split) {
     not.is.in <- !is.in
     if ( sum(not.is.in) > sum(is.in) ) {
@@ -132,12 +133,13 @@ theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE, thin
       is.in[1:2][is.in[1:2]] <- FALSE
     }
   }
-  for (i in 1:n.chains)
-    lst[[i]] <- mcmc(t(samples$theta[i,,indx[is.in]]), thin = thin)
-  if ( split ) {
-    for (i in 1:n.chains)
-      lst[[i+n.chains]] <- mcmc(t(samples$theta[i,,indx[not.is.in]]),thin=thin)
+
+  for (i in 1:nchain) lst[[i]] <- mcmc( t(samples$theta[i, , idx[is.in]]), thin = thin)
+
+  if (split) {
+    for (i in 1:nchain) lst[[i+nchain]] <- mcmc( t(samples$theta[i, , idx[not.is.in]]), thin = thin)
   }
+
   mcmc.list(lst)
 }
 

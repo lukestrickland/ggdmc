@@ -2,22 +2,22 @@
 % Please edit documentation in R/ggdmc_prior.R
 \name{BuildPrior}
 \alias{BuildPrior}
-\title{Specify Prior Distributions}
+\title{Specifying Parameter Prior Distributions}
 \usage{
 BuildPrior(p1, p2, lower = rep(NA, length(p1)), upper = rep(NA, length(p1)),
   dists = rep("tnorm", length(p1)), untrans = rep("identity", length(p1)),
   types = c("tnorm", "beta", "gamma", "lnorm", "cauchy", "constant"))
 }
 \arguments{
-\item{p1}{the first parameter of a prior distribution}
+\item{p1}{the first parameter of a distribution}
 
-\item{p2}{the second parameter of a prior distribution}
+\item{p2}{the second parameter of a distribution}
 
-\item{lower}{lower support boundary}
+\item{lower}{lower support (boundary)}
 
-\item{upper}{upper support boundary}
+\item{upper}{upper support (boundary)}
 
-\item{dists}{a character string indicating which distribution.}
+\item{dists}{a vector of character string specifying a distribution.}
 
 \item{untrans}{whether to do log transformation. Default is not}
 
@@ -27,20 +27,20 @@ BuildPrior(p1, p2, lower = rep(NA, length(p1)), upper = rep(NA, length(p1)),
 a list of list
 }
 \description{
-\code{BuildPrior} sets up prior distributions separately for each model
+\code{BuildPrior} sets up parameter prior distributions for each model
 parameter. \code{p1} and \code{p2} refer to the first and second parameters
-for prior distributions.
+a prior distribution.
 }
 \details{
-Four distributions are available:
+Four distribution types are implemented:
 \enumerate{
-\item Truncated normal, where: p1 = mean, p2 = sd. This becomes to normal
-distribution when bounds are set -Inf and Inf,
-\item Beta, where: p1 = shape1 and p2 = shape2 (see \link{pbeta}. Note the
+\item Normal and truncated normal, where: p1 = mean, p2 = sd. It specifies
+a normal distribution when bounds are set -Inf and Inf,
+\item Beta, where: p1 = shape1 and p2 = shape2 (see \link{pbeta}). Note the
       uniform distribution is a special case of the beta with p1 and
       p2 = 1),
 \item Gamma, where p1 = shape and p2 = scale (see \link{pgamma}). Note p2 is
-      scale, NOT rate,
+      scale, not rate,
 \item Lognormal, where p1 = meanlog and p2 = sdlog (see \link{plnorm}).
 }
 }

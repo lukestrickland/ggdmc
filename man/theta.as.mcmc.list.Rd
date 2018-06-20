@@ -5,23 +5,18 @@
 \alias{phi.as.mcmc.list}
 \title{Convert Theta to a mcmc List}
 \usage{
-theta.as.mcmc.list(samples, start = 1, end = NA, split = FALSE,
-  thin = 1)
+theta.as.mcmc.list(samples, start = 1, end = NA, split = FALSE)
 
 phi.as.mcmc.list(hyper, start = 1, end = NA, split = FALSE, thin = 1)
 }
 \arguments{
-\item{samples}{a DMC sample}
+\item{samples}{a sample list}
 
 \item{start}{start iteration}
 
 \item{end}{end iteraton}
 
-\item{split}{a boolean indicating to split MCMC chains.}
-
-\item{thin}{thinning length}
-
-\item{hyper}{a hyper attribute extracted from an hierarchical sample}
+\item{split}{whether to divide one MCMC sequence into two sequences.}
 }
 \description{
 \code{theta.as.mcmc.list} extracts data-level parameter array, \code{theta},
