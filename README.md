@@ -199,7 +199,7 @@ time0 <- system.time(hsam0 <- ggdmc::run(hsamples, pm = .05))
 ## Turn off migration. Default pm = 0
 hsam1 <- h.samples.dmc(nmc = 512, p.prior, samples = hsam0, 
   pp.prior = pp.prior, thin = 64)
-time2 <- system.time(hsam1 <- ggdmc::run(hsam1))
+time1 <- system.time(hsam1 <- ggdmc::run(hsam1))
 
 ```
 
