@@ -131,7 +131,7 @@ hsam0 <- ggdmc::run(hsam0, pm = .1)
 
 ```
 
-## How to pipe DMC samples to ggdmc samplers 
+## How to pipe DMC samples to _ggdmc_ samplers 
 Diffusion-decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
 cognitive model to fit choice RT data in cognitive psychology.  Here I 
 show an exampling, fitting full DDM model.  The second aim of this example
