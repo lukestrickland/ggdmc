@@ -763,10 +763,24 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
   hyper <- attr(samples, "hyper")
 
   if (!is.null(hyper)) {   ## hierarchical model
-    if (is.null(attr(samples[[1]]$data, "bw"))) stop("No GPU attributes")
-    if (is.null(attr(samples[[1]]$data, "gpuid"))) stop("No GPU attributes")
+    if (is.null(attr(samples[[1]]$data, "bw"))) {
+      message("No GPU attributes. Default bw = .001, using GPU 0.")
+      for(i in 1:length(data.model)) {
+        attr(samples[[i]]$data, "bw") <- .001
+        attr(samples[[i]]$data, "gpuid") <- 0
+      }
+    }
 
     out <- run_hyper_dmc(samples, report, pm, gamma.mult, ncore, debug)
+
+    phi1_tmp <- attr(out, "hyper")$phi[[1]]
+    phi2_tmp <- attr(out, "hyper")$phi[[2]]
+    pnames <- GetPNames(attr(samples[[1]]$data, "model"))
+    dimnames(phi1_tmp) <- list(NULL, pnames, NULL)
+    dimnames(phi2_tmp) <- list(NULL, pnames, NULL)
+    attr(out, "hyper")$phi[[1]] <- phi1_tmp
+    attr(out, "hyper")$phi[[2]] <- phi2_tmp
+
   } else if (any(names(samples) == "theta")) { ## One subject
     out <- run_one(samples, report, ncore, pm, qm, gamma.mult, ngroup, force,
       sampler)
@@ -775,6 +789,7 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
       sampler)
   }
 
+  class(out) <- "model"
   cat("\n")
   return(out)
 }

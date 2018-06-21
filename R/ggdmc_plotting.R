@@ -251,7 +251,7 @@ pairs.dmc <- function(x, start=1, ...) {
 #' ## plot(samples0, start=101)
 #' ## plot(samples0, start=101, density=TRUE)
 #' ## plot(samples0, pll.chain=TRUE)
-plot.dmc <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
+plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
   pll.chain = TRUE, pll.together=TRUE, pll.barplot=FALSE, only.prior=FALSE,
   only.like=FALSE, smooth=FALSE, density=FALSE, save.dat=FALSE,
   p.prior=NULL, natural=TRUE, trans=NA, xlim=NA, chain1=TRUE, ...)

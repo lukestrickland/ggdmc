@@ -1,33 +1,32 @@
 # Dynamic Models of Choice with Better Graphic Tools and Quicker Computations 
 
-The _ggdmc_ package, evolving from dynamic model of choice (_DMC_,
+The package, evolving from dynamic model of choice (_DMC_,
 Heathcote et al., 2018), is a generic tool for conducting hierarchical 
-Bayesian computations (BC) on cognitive process, e.g., decision diffusion 
-(Ratcliff, 1978; Ratcliff & McKoon, 2008) and linear ballistic accumultion 
-(Brown & Heathcote, 2008), models with the differential evolution Markov 
-chain Monte Carlo (DE-MCMC) sampler 
-(Turner, Sederberg, Brown, & Steyvers, 2013). In addition to using the fast 
-sampler, _ggdmc_ differs from the Python-based HDDM 
-(Wiecki, Sofer & Frank, 2013), by allowing the user to specify the 
-variabilities of model parameters, e.g., drift rates and the start 
-points in decision diffusion model  at also the hierarchical level as well as 
-incorporating the features of specifying many different factorial designs 
-found often in psychology. 
-  
-Differring from _DMC_, the _ggdmc_ package uses Rcpp 
-(Eddelbuettel & Francois, 2011) and Armadillo C++ (Sanderson & Curtin, 2016) 
-to programme time-critical computations and has more different genetic 
-operators. 
+Bayesian Computations on cognitive models.  
+
+1. Differing from DMC (Heathcote, et al., 2018), using only DE-MCMC 
+(Turner, Sederberg, Brown, & Steyvers, 2013), _ggdmc_ provides a number of 
+different population-based MCMC (pMCMC) samplers, although DMC may 
+incorporate these pCMCM varieties too in the future. It is up to the user to 
+decide which sampler works best for their models. 
+
+2. Instead of using Gibbs or HMC, _ggdmc_ uses pMCMC (pMCMC) samplers. A 
+notable Gibbs example is the Python-based HDDM (Wiecki, Sofer & Frank, 2013), 
+which does not allow the user to conveniently set the variabilities of 
+DDM parameters. 
+
+3. In addition to the fast Armadillo C++ implementation, differring from _DMC_, 
+the _ggdmc_ allows the user to specify a varity of pMCMC samplers, and
+one such sampler is DE-MCMC. 
 
 ## Getting Started
-Here is a simple example extracted from Andrew Heathcote's DMC workshop 
-materials. For further details, please see R help pages in this package. 
+Below is an example using the LBA Model (Brown & Heathcote, 2008). See
+the tutorials in Heathcote et al., (2018) for more. 
 
 ```
 require(ggdmc) 
-
-model <- ggdmc::BuildModel(p.map = list(A = "1", B = "R", t0 = "1",
-                                        mean_v = c("F", "M"), sd_v = "M", st0 = "1"),
+model <- BuildModel(p.map = list(A = "1", B = "R", t0 = "1",
+                            mean_v = c("F", "M"), sd_v = "M", st0 = "1"),
           match.map = list(M = list(s1 = 1, s2 = 2)),
           factors   = list(S = c("s1", "s2"), F = c("f1", "f2")),
           constants = c(sd_v.false = 1, st0 = 0), 
@@ -38,12 +37,10 @@ model <- ggdmc::BuildModel(p.map = list(A = "1", B = "R", t0 = "1",
 pop.mean <- c(A = .4, B.r1 = 1.2, B.r2 = 2.8, t0 = .2,
               mean_v.f1.true = 2.5, mean_v.f2.true = 1.5, mean_v.f1.false = .35,
               mean_v.f2.false = .25, sd_v.true = .25)
-
 pop.scale <- c(A = .1, B.r1 = .1, B.r2 = .1, t0 = .05,
                mean_v.f1.true = .2, mean_v.f2.true = .2, mean_v.f1.false = .2,
                mean_v.f2.false = .2, sd_v.true = .1)
-
-pop.prior <- ggdmc::BuildPrior(
+pop.prior <- BuildPrior(
   dists = rep("tnorm", 9),
   p1    = pop.mean,
   p2    = pop.scale,
@@ -51,16 +48,20 @@ pop.prior <- ggdmc::BuildPrior(
   upper = c(NA, NA, 1, NA, NA, NA, NA, NA, NA))
 
 ## Draw parameter prior distributions to visually check
-ggdmc:::plot.prior(pop.prior)
+plot(pop.prior)
 
 ## Simulate 40 participants, each condition has 250 responses.
 ## The true parameter vectors are drawn from parameter prior distribution
 ## specified in 'pop.prior' 
-dat <- ggdmc:::simulate.model(model, nsim = 250, nsub = 40, p.prior = pop.prior)
-dmi <- ggdmc::BindDataModel(dat, model)    ## data model instance
+dat <- simulate(model, nsim = 250, nsub = 40, p.prior = pop.prior)
+dmi <- BindDataModel(dat, model)    ## dmi = data model instance (thanks to MG)
 
-## A quick way to check data quality
-## Upper=biased to resposne, Lower = biased away. First column = greater rate, second lesser
+## A DMC quick way to check data quality. That we want to a good balance of 
+## correct and error responses 
+## Upper = biased to resposne, 
+## Lower = biased away response. 
+## First column = greater rate, 
+## second lesser = rate
 ## pdf("figs/data.pdf")
 ## par(mfcol = c(2, 2))
 ## for (i in 1:40) {
@@ -82,9 +83,8 @@ dmi <- ggdmc::BindDataModel(dat, model)    ## data model instance
 ##            0.34       0.36   0.23
 ##            0.16       0.18   0.10
            
-### FIT RANDOM EFFECTS
-## Specify prior distributions at the trial/data level
-p.prior <- ggdmc::BuildPrior(
+## FIT HDDM
+p.prior <- BuildPrior(
   dists = rep("tnorm", 9),
   p1    = pop.mean,
   p2    = pop.scale,
@@ -92,28 +92,29 @@ p.prior <- ggdmc::BuildPrior(
   upper = c(NA, NA, 1, NA, NA, NA, NA, NA, NA))
 
 ## Specify prior distributions at the hyper level
-mu.prior <- ggdmc::BuildPrior(
-  dists = rep("tnorm",9),
+mu.prior <- BuildPrior(
+  dists = rep("tnorm", 9),
   p1    = pop.mean,                           
-  p2    = c(1, 1, 1, 2, 2, 2, 2, 1, 1),
-  lower = c(0,   0,  0, .1,  NA,NA,NA,NA,0),
-  upper = c(NA, NA, NA, NA, NA,NA,NA,NA,NA))
+  p2    = c(1,   1,  1,  2,   2,  2,  2,  1, 1),
+  lower = c(0,   0,  0, .1,  NA, NA, NA, NA, 0),
+  upper = c(NA, NA, NA, NA,  NA, NA, NA, NA, NA))
 
-sigma.prior <- ggdmc::BuildPrior(
-  dists = rep("beta", length(p.prior)),
+## lower and upper are taken care of by defaults.
+sigma.prior <- BuildPrior(
+  dists = rep("beta", 9),
   p1    = c(A=1, B.r1=1, B.r2=1, t0 = 1, mean_v.f1.true=1, mean_v.f2.true=1,
             mean_v.f1.false=1, mean_v.f2.false=1, sd_v.true = 1),
   p2    = rep(1, 9))
 
-## Visually check mu priors and sigma priors
-ggdmc:::plot.prior(mu.prior)
-ggdmc:::plot.prior(sigma.prior)
 pp.prior <- list(mu.prior, sigma.prior)
 
-## Initialise a small sample 
+## Visually check mu priors and sigma priors
+plot(pp.prior[[1]])
+plot(pp.prior[[2]])
 
+## Initialise a small sample 
 ## Get the number of parameters
-## npar <- length(ggdmc::GetPNames(model)); npar
+npar <- length(GetPNames(model)); npar
 thin <- 2
 
 ## Initiate 512 new hierarchical samples and specify (randomly) only the first 
@@ -123,14 +124,88 @@ thin <- 2
 hsam0 <- ggdmc::init_newhier(512, dmi, p.prior, pp.prior, thin = thin, nchain = 54)
 
 ## This will take about 1 hr
-## pm: probability of using migration sampler; gammamult a tuning parameter
-## for the DE-MCMC sampler
-hsam0 <- ggdmc::run_hyper_dmc(hsam0, report = 1e2, pm = 0.08, gammamult = 2.38,
-                              ncore = 1)
+## pm: probability of migration ; gammamult is a tuning parameter in the 
+## DE-MCMC sampler
+hsam0 <- ggdmc::run(hsam0, pm = .1)
+
 
 ```
 
-### Prerequisites
+## How to pipe DMC samples to ggdmc samplers 
+Diffusion-decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
+cognitive model to fit choice RT data in cognitive psychology.  Here I 
+show an exampling, fitting full DDM model.  The second aim of this example
+is to show how to pipe DMC samples to fast DE-MCMC sampler.  The speed-up
+is usually 9 to 10 times.
+
+```
+## DMC could be downloaded at "osf.io/pbwx8".
+setwd("~/Documents/DMCpaper/")
+source ("dmc/dmc.R")
+load_model ("LBA","lba_B.R")
+setwd("~/Documents/ggdmc_paper/")
+load("data/dmc_pipe_LBA.rda")
+
+model <- model.dmc(p.map = list( A = "1", B = "R", t0 = "1",
+                                mean_v = c("F", "M"), sd_v = "M", st0 = "1"),
+          match.map = list(M = list(s1 = 1, s2 = 2)),
+          factors = list(S = c("s1", "s2"), F = c("f1", "f2")),
+          constants = c(sd_v.false = 1, st0 = 0),
+          responses = c("r1", "r2"),
+          type = "norm")
+pop.mean <- c(A=.4, B.r1=.6, B.r2=.8, t0=.3, mean_v.f1.true=1.5, 
+              mean_v.f2.true=1, mean_v.f1.false=0, mean_v.f2.false=0,
+              sd_v.true = .25)
+pop.scale <-c(A=.1, B.r1=.1, B.r2=.1, t0=.05, mean_v.f1.true=.2, 
+              mean_v.f2.true=.2, mean_v.f1.false=.2, mean_v.f2.false=.2,
+              sd_v.true = .1)
+pop.prior <- prior.p.dmc(
+  dists = rep("tnorm",9),
+  p1    = pop.mean,
+  p2    = pop.scale,
+  lower = c(0,0,0,NA,NA,NA,NA,0,.1),
+  upper = c(NA,NA,NA,NA,NA,NA,NA,NA,1))
+raw.data <- h.simulate.dmc(model, p.prior = pop.prior, n = 250, ns = 40)
+data.model <- data.model.dmc(raw.data, model)
+
+ps <- round( attr(raw.data, "parameters"), 2)
+
+p.prior <- prior.p.dmc(
+  dists = rep("tnorm",9),
+  p1    = pop.mean,
+  p2    = pop.scale*5,
+  lower = c(0,0,0,NA,NA,NA,NA,0,.1),
+  upper = c(NA,NA,NA,NA,NA,NA,NA,NA,NA))
+mu.prior <- prior.p.dmc(
+  dists = rep("tnorm",9),
+  p1    = pop.mean,
+  p2    = c(1,1,1,2,2,2,2,1,1),
+  lower = c(0,0,0,NA,NA,NA,NA,0,.1),
+  upper = c(NA,NA,NA,NA,NA,NA,NA,NA,NA))
+sigma.prior <- prior.p.dmc(
+  dists = rep("beta", 9),
+  p1    = c(A=1, B.r1=1, B.r2=1, t0=1, mean_v.f1.true=1, mean_v.f2.true=1, 
+            mean_v.f1.false=1, mean_v.f2.false=1, sd_v.true = 1),
+  p2    = rep(1,9))
+pp.prior <- list(mu.prior, sigma.prior)
+
+hsamples <- h.samples.dmc(nmc = 512, p.prior, data.model, pp.prior = pp.prior,
+  thin = 64)
+
+
+## Piping 
+time0 <- system.time(hsam0 <- ggdmc::run(hsamples, pm = .05))
+
+## Turn off migration. Default pm = 0
+hsam1 <- h.samples.dmc(nmc = 512, p.prior, samples = hsam0, 
+  pp.prior = pp.prior, thin = 64)
+time2 <- system.time(hsam1 <- ggdmc::run(hsam1))
+
+```
+
+
+
+## Prerequisites
  - R (>= 3.0.0)
  - Rcpp (>= 0.12.10), RcppArmadillo (>= 0.7.700.0.0), ggplot2 (>= 2.1.0),
    rtdists (>= 0.6-6), gridExtra (>= 2.2-1), ggmcmc (>= 0.7.3), 
@@ -153,11 +228,11 @@ Successful cases for Windows OS:
 Unsuccseeful cases for Windows OS:
   - Microsoft Blend for Visual Studio Express 2015   
 
-### Installing
+## Installing
 
 ```
 From CRAN: install.packages("ggdmc")
-From source: install.packages("ggdmc_0.1.9.7.tar.gz", repos = NULL, type="source")
+From source: install.packages("ggdmc_0.1.9.9.tar.gz", repos = NULL, type="source")
 
 ```
 
@@ -165,16 +240,15 @@ From source: install.packages("ggdmc_0.1.9.7.tar.gz", repos = NULL, type="source
 
 If you use this package, please cite the software, for example:
 
-Lin, Y.-S., & Heathcote, A (in preparation). ggdmc: An R package for 
-hierarchical Bayesian evidence accumulation models, using differential
-evolution Markov Chain Monte Carlo Sampler. Retrieved from
-https://github.com/TasCL/ggdmc
+Lin, Y.-S., & Heathcote, A (in preparation). Distributed Genetic Monte Carlo is 
+as Effective as Hamiltonian Monte Carlo in Fitting High Dimension Cognitive 
+Model. Retrieved from https://github.com/TasCL/ggdmc
 
 ## Contributors
 
 The documentation, C++ codes, R helper functions and pacakging are developed by 
-Yi-Shin Lin. The R codes (in DMC) are developed by Andrew Heathcote. If there 
-is any bug, please report to [me](mailto:yishin.lin@utas.edu.au). 
+Yi-Shin Lin. DMC is developed by Andrew Heathcote. Please report bugs to 
+[Yi-Shin Lin](mailto:yishin.lin@utas.edu.au). 
 
 ## License
 
@@ -182,12 +256,11 @@ GPL-2. Please see License.md/LICENSE for details.
 
 ## Acknowledgments
 
-* density.cpp is based on Voss & Voss's (2012) density.c in fast-dm 30.2. 
-* The truncated normal distributions were originally based on Jonathan Olmsted's
-<jpolmsted@gmail.com> RcppTN 0.1-8 (https://github.com/olmjo/RcppTN) and 
-Christopher Jackson's <chris.jackson@mrc-bsu.cam.ac.uk> R codes in msm. 
-* C++ codes in this package depend largely on Dirk Eddelbuettel, Romain 
-Francois and Doug Bates's Rcpp, and RcppArmadillo.  
+* Early version of density.cpp is based on Voss & Voss's (2012) density.c in 
+fast-dm 30.2. 
+* Early version of the truncated normal distributions is  based on Jonathan 
+Olmsted's <jpolmsted@gmail.com> RcppTN 0.1-8 (https://github.com/olmjo/RcppTN) 
+and Christopher Jackson's <chris.jackson@mrc-bsu.cam.ac.uk> R codes in msm package. 
 * Armadillo is a collection of C++ library for performing linear
 algebra <http://arma.sourceforge.net/>, authored by Conrad Sanderson. 
-* Thanks to Matthew Gretton's consulation about rtdists's internal. 
+* Thanks to Matthew Gretton's consulation about rtdists. 

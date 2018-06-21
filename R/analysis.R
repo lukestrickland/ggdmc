@@ -417,159 +417,56 @@ effectiveSize.dmc <- function(x, hyper=FALSE, digits=0,start=1,end=NA)
 #' class(samples0)
 #' ## [1] "dmc"
 #' summary(samples0)
-summary.dmc <- function(object, start=1, end=NA, ... )
-{
-  if (is.na(end)) end <- object$nmc
-  summary(theta.as.mcmc.list(object, start=start, end=end))
-}
+summary.model <- function(object, hyper = FALSE, start = 1, end = NA,
+  hmeans = FALSE, hci = FALSE, ..., digits = 2) {
 
-#' Summarise a DMC Sample with Multiple Participants
-#'
-#' Call coda package to summarise the model parameters in a DMC samples with
-#' multiple participants
-#'
-#' @param object a model samples
-#' @param digits how many digits to print
-#' @param start summarise from which MCMC iteration. Default uses the first
-#' iteration.
-#' @param end summarise to the end of MCMC iteration. For example, set
-#' \code{start=101} and \code{end=1000}, instructs the function to calculate
-#' from 101 to 1000 iteration.  Default uses the last iteration.
-#' @param ... other aruguments
-#' @keywords summary
-#' @seealso \code{\link{summary.dmc}, \link{summary.hyper}}
-#' @export
-#' @examples
-#' m1 <- model.dmc(
-#'       p.map     = list(a="1",v="F",z="1",d="1",sz="1",sv="1",t0="1",
-#'                        st0="1"),
-#'       match.map = list(M=list(s1="r1",s2="r2")),
-#'       factors   = list(S=c("s1","s2"),F=c("f1","f2")),
-#'       constants = c(st0=0,d=0),
-#'       responses = c("r1","r2"),
-#'       type      = "rd")
-#'
-#' pop.mean  <- c(a=1.15, v.f1=1.25, v.f2=1.85, z=0.55, sz=0.15, sv=0.32,
-#'                t0=0.25)
-#' pop.scale <- c(a=0.10, v.f1=.8,   v.f2=.5,   z=0.1,  sz=0.05, sv=0.05,
-#'                t0=0.05)
-#' pop.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", length(pop.mean)),
-#'   p1    = pop.mean,
-#'   p2    = pop.scale,
-#'   lower = c(0,-5, -5, 0, 0,   0, 0),
-#'   upper = c(5, 7,  7, 1, 0.5, 2, 2))
-#'
-#' dat  <- h.simulate.dmc(m1, nsim=30, ns=4, p.prior=pop.prior)
-#' mdi1 <- BindDataModel(dat, m1)
-#' ps   <- attr(dat,  "parameters")
-#'
-#' p.prior <- prior.p.dmc(
-#'   dists= rep("tnorm", length(pop.mean)),
-#'   p1=pop.mean,
-#'   p2=pop.scale*5,
-#'   lower=c(0,-5, -5, 0, 0, 0, 0),
-#'   upper=c(5, 7,  7, 2, 2, 2, 2))
-#' samples0 <- h.samples.dmc(nmc=30, p.prior=p.prior, data=mdi1, thin=1)
-#' samples0 <- h.run.dmc(samples0)
-#' class(samples0)
-#' ## [1] "dmc.list"
-#' gelman.diag.dmc(samples0)
-#'
-#' ## summary calls theta.as.mcmc.list, which is very slow.
-#' ## summary(samples0)
-summary.dmc.list <- function(object, digits=2, start=1, end=NA, ...)
-{
-  out <- lapply(object, function(x) {
-    if (is.na(end)) end <- x$nmc
-    summary(theta.as.mcmc.list(x, start=start, end=end))
-  })
-  tmp <- t(data.frame(lapply(out,function(x){x[[1]][,1]})))
-  tmp <- rbind(tmp, apply(tmp,2,mean))
-  row.names(tmp) <- c(names(object), "Mean")
-  print(round(tmp, digits))
-  invisible(out)
-}
+  if (hyper || hmeans || hci) {
+    message("Random-effec model with multiple participants")
+    hyper <- attr(object, "hyper")
+    if (is.na(end)) end <- hyper$nmc
+    tmp <- summary(phi.as.mcmc.list(hyper, start=start, end=end))
 
-#' Summarise a DMC Sample with Multiple Participant at the Hyper-level
-#'
-#' Call coda package to summarise the model parameters in a DMC samples with
-#' multiple participants at the hyper level.
-#'
-#' @param object a model samples
-#' @param start summarise from which MCMC iteration.
-#' @param end summarise to the end of MCMC iteration. For example, set
-#' \code{start=101} and \code{end=1000}, instructs the function to calculate
-#' from 101 to 1000 iteration.
-#' @param hyper.means default as FALSE
-#' @param ... other arguments
-#' @keywords summary
-#' @seealso \code{\link{summary.dmc}, \link{summary.dmc.list}}
-#' @export
-#' @examples
-#' m1 <- model.dmc(
-#'      p.map     = list(a="1",v="F",z="1",d="1",sz="1",sv="1",t0="1",st0="1"),
-#'      match.map = list(M=list(s1="r1",s2="r2")),
-#'      factors   = list(S=c("s1","s2"),F=c("f1","f2")),
-#'      constants = c(st0=0,d=0),
-#'      responses = c("r1","r2"),
-#'      type      = "rd")
-#'
-#' pop.mean  <- c(a=1.15, v.f1=1.25, v.f2=1.85, z=.55,  sz=.15, sv=.32, t0=.25)
-#' pop.scale <- c(a=.10,  v.f1=.8,   v.f2=.5,   z=0.1,  sz=.05, sv=.05, t0=.05)
-#' pop.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", length(pop.mean)),
-#'   p1    = pop.mean,
-#'   p2    = pop.scale,
-#'   lower = c(0,-5, -5, 0, 0,   0, 0),
-#'   upper = c(5, 7,  7, 1, 0.5, 2, 2))
-#'
-#' dat  <- h.simulate.dmc(m1, nsim=30, ns=4, p.prior=pop.prior)
-#' mdi1 <- BindDataModel(dat, m1)
-#' ps   <- attr(dat,  "parameters")
-#' ### FIT RANDOM EFFECTS
-#' p.prior <- prior.p.dmc(
-#'   dists = c("tnorm","tnorm","tnorm","tnorm","tnorm", "tnorm", "tnorm"),
-#'   p1=pop.mean,
-#'   p2=pop.scale*5,
-#'   lower=c(0,-5, -5, 0, 0, 0, 0),
-#'   upper=c(5, 7,  7, 2, 2, 2, 2))
-#'
-#' mu.prior <- prior.p.dmc(
-#'   dists = c("tnorm","tnorm","tnorm","tnorm","tnorm", "tnorm", "tnorm"),
-#'   p1=pop.mean,
-#'   p2=pop.scale*5,
-#'   lower=c(0,-5, -5, 0, 0, 0, 0),
-#'   upper=c(5, 7,  7, 2, 2, 2, 2))
-#'
-#' sigma.prior <- prior.p.dmc(
-#'   dists = rep("beta", length(p.prior)),
-#'   p1=c(a=1, v.f1=1,v.f2 = 1, z=1, sz=1, sv=1, t0=1),p2=c(1,1,1,1,1,1,1),
-#'   upper=c(2,2,2,2,2, 2, 2))
-#'
-#' pp.prior <- list(mu.prior, sigma.prior)
-#'
-#' hsamples0 <- h.samples.dmc(nmc=30, p.prior=p.prior, pp.prior=pp.prior,
-#'   data=mdi1, thin=1)
-#' hsamples0 <- h.run.dmc(hsamples0, p.migrate=.05, h.p.migrate=.05)
-#'
-#' class(hsamples0)
-#' ## [1] "hyper"
-#'
-#' ## summary.hyper calls phi.as.mcmc.list, which is very slow.
-#' ## summary(hsamples0)
-#' ## summary(hsamples0, hyper.means=TRUE)
-summary.hyper <- function(object, start=1, end=NA, hyper.means=FALSE, ...)
-{
-  hyper <- attr(object, "hyper")
-  if (is.na(end)) end <- hyper$nmc
-  if (hyper.means) {
-    tmp <- summary(phi.as.mcmc.list(hyper,start=start,end=end))
-    matrix(tmp$statistics[,"Mean"], nrow=2,
-      dimnames=list(c("h1","h2"), object[[1]]$p.names))
+    if (hmeans) {
+      out <- matrix(tmp$statistics[, "Mean"], nrow = 2,
+        dimnames = list(c("h1", "h2"), object[[1]]$p.names))
+    } else if (hci) {
+      tmp1 <- tmp$quantiles[,c(1,3,5)]
+      tmp1 <- round(cbind(tmp1[1:(dim(tmp1)[1]/2),],
+        tmp1[((dim(tmp1)[1]/2)+1):dim(tmp1)[1],]),2)
+      dimnames(tmp1) <- list(unlist(strsplit(
+        dimnames(tmp1)[[1]],".h1")),
+        paste0(c("MEAN: ","",""," SD:  ","",""),dimnames(tmp1)[[2]]) )
+      out <- round(tmp1, digits)
+    } else {
+      out <- tmp
+    }
+
+  } else if (!is.null(object$theta)) {
+    message("Single Participant")
+
+    if (is.na(end)) end <- object$nmc
+    out <- summary(theta.as.mcmc.list(object, start = start, end = end))
   } else {
-    summary(phi.as.mcmc.list(hyper,start=start,end=end))
+    message("Summary each participant separately")
+
+    out   <- vector(mode = "list", length = length(object))
+    start <- rep(start, length.out = length(object))
+    end <- rep(end, length.out = length(object))
+    names(out) <- names(object)
+    for (i in 1:length(object)) {
+      if ( is.na(end[i]) ) end[i] <- object[[i]]$nmc
+      out[[i]] <- summary(theta.as.mcmc.list(object[[i]], start = start[i],
+        end = end[i]))
+    }
+    tmp <- t(data.frame(lapply(out, function(x){x[[1]][, 1]})))
+    tmp <- rbind(tmp, apply(tmp, 2, mean))
+    row.names(tmp) <- c(names(object), "Mean")
+    print(round(tmp, digits))
+    invisible(out)
   }
+
+  return(out)
+
 }
 
 
