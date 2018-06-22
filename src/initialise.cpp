@@ -125,7 +125,6 @@ List init_add(unsigned int nmc, List samples, double rp,
     unsigned int pnmc = samples_in["nmc"]; // previous nmc
     unsigned int npar = samples_in["n.pars"];
     unsigned int nchain    = samples_in["n.chains"];
-    unsigned int startfrom = pnmc - 1; // previous nmc
     unsigned int newnmc    = nmc + pnmc;
 
     Rcout << "Add " << nmc << " new samples onto the existing one.\n";
@@ -299,7 +298,6 @@ List init_oldhier(unsigned int nmc, List samples, double rp,
   unsigned int thin) {
 
   List samples_in(clone(samples));
-  unsigned int nsub  = samples_in.size();
   List hyper = samples_in.attr("hyper");
   List subject0 = samples_in[0];
   List pprior   = subject0["p.prior"];
@@ -361,7 +359,6 @@ List init_addhier(unsigned int nmc, List samples, double rp,
   unsigned int thin) {
 
   List samples_in(clone(samples));
-  unsigned int nsub  = samples_in.size();
   List hyper = samples_in.attr("hyper");
   List subject0 = samples_in[0];
   List pprior   = subject0["p.prior"];
@@ -373,7 +370,6 @@ List init_addhier(unsigned int nmc, List samples, double rp,
   unsigned int pnmc      = hyper["nmc"]; // previous nmc
   unsigned int npar      = hyper["n.pars"];
   unsigned int nchain    = hyper["n.chains"];
-  unsigned int startfrom = pnmc - 1;
   unsigned int newnmc    = nmc + pnmc;
 
   arma::cube location = phi[0];

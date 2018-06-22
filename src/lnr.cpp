@@ -103,7 +103,8 @@ arma::mat rlnr(unsigned int n, arma::vec meanlog, arma::vec sdlog, arma::vec t0,
 
 //' @export
 // [[Rcpp::export]]
-DataFrame rlnrDF(int n, arma::vec meanlog, arma::vec sdlog, arma::vec t0, double st0 = 0) {
+DataFrame rlnrDF(unsigned int n, arma::vec meanlog, arma::vec sdlog,
+  arma::vec t0, double st0 = 0) {
 
     unsigned int n_acc = meanlog.n_elem;
     arma::mat RT(n_acc, n);

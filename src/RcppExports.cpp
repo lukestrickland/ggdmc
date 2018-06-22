@@ -986,12 +986,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // rlnrDF
-DataFrame rlnrDF(int n, arma::vec meanlog, arma::vec sdlog, arma::vec t0, double st0);
+DataFrame rlnrDF(unsigned int n, arma::vec meanlog, arma::vec sdlog, arma::vec t0, double st0);
 RcppExport SEXP _ggdmc_rlnrDF(SEXP nSEXP, SEXP meanlogSEXP, SEXP sdlogSEXP, SEXP t0SEXP, SEXP st0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type n(nSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type meanlog(meanlogSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type sdlog(sdlogSEXP);
     Rcpp::traits::input_parameter< arma::vec >::type t0(t0SEXP);

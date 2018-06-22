@@ -135,6 +135,7 @@ cognitive models to fit choice RT data in cognitive psychology.  Here we
 show two examples, one fitting the LBA model and the other fitting DDM 
 model.  The speed-up is up to 9 times quicker. 
 
+
 ```
 ###################
 ##   LBA model   ##
@@ -307,13 +308,16 @@ regions in a parameter space might be difficult to handle.  Here we provide one
 possible way to conduct automatic convergece checks and repeatedly run 
 model fit until a proper posterior distribution has reached.
 
+First, we convert the first stage samples (i.e., hsam0) to a generic object, 
+hsam. Then, we use the _repeat_ function to iterate model fit. Meanwhile,
+we use _CheckConverged_ to check whether Markov chains are flat, well-mixed,
+and have enough effective samples.
 
-````
 
-## Convert the first stage samples to a generic object
+```
+
 hsam <- hsam0
 
-## Use R repeat function to iterate
 repeat {
   hsam <- ggdmc::run(ggdmc::init_oldhier(512, hsam, .001, thin))
   save(hsam, hsam0, dat, dmi, p.prior, pp.prior, file = "data/tmp.rda")
@@ -327,10 +331,10 @@ repeat {
   }
 }
 
-## The last hsam would be samples from a proper posterior distribution or
-## counter reached its upper limit
 
 ```
+
+
 
 
 

@@ -276,7 +276,6 @@ private(i) firstprivate(mean_v, mean_w, sd_v, sd_w, A, b, t0)
 #endif
   for(i = 0; i < n; i++)
   {  // Stage 1 LBA
-    int R_tmp;
     v0[i] = rtn_scalar(mean_v[0], sd_v[0], 0, INFINITY) ; // acc1 (X)
     v1[i] = rtn_scalar(mean_v[1], sd_v[1], 0, INFINITY) ; // acc2 (O)
     x0[i] = R::runif(0, A[0]);
@@ -324,7 +323,6 @@ arma::mat rplba2_test(unsigned int n, arma::vec A, arma::vec b, double t0, arma:
 
   for(i = 0; i < n; i++)
     {  // Stage 1 LBA
-      int R_tmp;
       v0[i] = rtn_scalar(mean_v[0], sd_v[0], 0, INFINITY) ; // acc1 (X)
       v1[i] = rtn_scalar(mean_v[1], sd_v[1], 0, INFINITY) ; // acc2 (O)
       x0[i] = R::runif(0, A[0]);
@@ -392,7 +390,7 @@ arma::mat rplba3(int n, arma::vec A, arma::vec B, arma::vec C,
 
   double swtD = swt2 - swt1;
   // --------------------------------------------------------------------------
-  double u0, u1, v0, v1, w0, w1, X0, X1, Y0, Y1, Z0, Z1;
+  double u0, u1, v0, v1, w0, w1, Y0, Y1, Z0, Z1;
   double dt0_stage1, dt0_stage2, dt0_stage3, dt1_stage1, dt1_stage2, dt1_stage3;
   double DT_tmp1, DT_tmp2, DT_tmp3;
   double x0, x1;
