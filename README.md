@@ -133,7 +133,7 @@ hsam0 <- ggdmc::run(hsam0, pm = .1)
 Diffusion-decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
 cognitive models to fit choice RT data in cognitive psychology.  Here we 
 show two examples, one fitting the LBA model and the other fitting DDM 
-model.  The speed-up is be up to 9 times quicker.
+model.  The speed-up is up to 9 times quicker. 
 
 ```
 ###################
