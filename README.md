@@ -4,24 +4,22 @@ The package, evolving from dynamic model of choice (_DMC_,
 Heathcote et al., 2018), is a generic tool for conducting hierarchical 
 Bayesian Computations on cognitive models.  
 
-1. Differing from DMC (Heathcote, et al., 2018), using only DE-MCMC 
-(Turner, Sederberg, Brown, & Steyvers, 2013), _ggdmc_ provides a number of 
-different population-based MCMC (pMCMC) samplers, although DMC may 
-incorporate these pCMCM varieties too in the future. It is up to the user to 
-decide which sampler works best for their models. 
+1. Instead of using Gibbs or HMC, _ggdmc_ uses population-based MCMC (pMCMC) 
+samplers. A notable Gibbs example is the Python-based 
+HDDM (Wiecki, Sofer & Frank, 2013), which does not allow the user to 
+conveniently set the variabilities of DDM parameters. 
 
-2. Instead of using Gibbs or HMC, _ggdmc_ uses pMCMC (pMCMC) samplers. A 
-notable Gibbs example is the Python-based HDDM (Wiecki, Sofer & Frank, 2013), 
-which does not allow the user to conveniently set the variabilities of 
-DDM parameters. 
-
-3. In addition to the fast Armadillo C++ implementation, differring from _DMC_, 
-the _ggdmc_ allows the user to specify a varity of pMCMC samplers, and
-one such sampler is DE-MCMC. 
+2. Differing from DMC (Heathcote, et al., 2018), with only DE-MCMC 
+(Turner, Sederberg, Brown, & Steyvers, 2013) sampler, _ggdmc_ provides a number 
+of different pMCMC samplers. It is up to the user to 
+decide which sampler works best for their models.  DMC may incorporate these 
+pCMCM varieties in the future.  
 
 ## Getting Started
 Below is an example using the LBA Model (Brown & Heathcote, 2008). See
-the tutorials in Heathcote et al., (2018) for more. 
+the tutorials in Heathcote et al., (2018) for more. Note to be more explicit,
+the functions in _ggdmc_ usually informs the user what they are doing, such as
+_BuildModel_ below. The syntax differs slightly from DMC.
 
 ```
 require(ggdmc) 
