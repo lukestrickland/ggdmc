@@ -311,7 +311,9 @@ model fit until a proper posterior distribution has reached.
 First, we convert the first stage samples (i.e., hsam0) to a generic object, 
 hsam. Then, we use the _repeat_ function to iterate model fit. Meanwhile,
 we use _CheckConverged_ to check whether Markov chains are flat, well-mixed,
-and have enough effective samples.
+and have enough effective samples. _flat_ is to check whether 
+premature convergence happens. _premature convergence is still less
+explored subject in fitting complex cognitive / biological (Ryan 1996).
 
 
 ```
