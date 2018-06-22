@@ -154,9 +154,11 @@ phi.as.mcmc.list <- function(hyper, start = 1, end = NA, split = FALSE, thin = 1
   ok2 <- paste(names(ok1[[2]])[unlist(ok1[[2]])],"h2",sep=".")
   ok1 <- paste(names(ok1[[1]])[unlist(ok1[[1]])],"h1",sep=".")
   if ( is.na(end) ) end <- dim(hyper$phi[[1]])[3]
-  n.chains <- dim(hyper$h_log_likelihoods)[2]
-  lst <- vector(mode="list",length=n.chains)
+  nchain <- dim(hyper$h_log_likelihoods)[2]
+
+  lst <- vector(mode = "list", length = nchain)
   indx <- start:end
+
   if (split) is.in <- !as.logical(indx %% 2) else
     is.in <- rep(TRUE,length(indx))
   if (split) {
@@ -167,28 +169,29 @@ phi.as.mcmc.list <- function(hyper, start = 1, end = NA, split = FALSE, thin = 1
       is.in[1:2][is.in[1:2]] <- FALSE
     }
   }
-  for (i in 1:n.chains) {
+
+  for (i in 1:nchain) {
     tmp1 <- t(hyper$phi[[1]][i,,indx[is.in]])
-    dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1",sep=".")
+    dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1", sep=".")
     tmp1 <- tmp1[,ok1]
     tmp2 <- t(hyper$phi[[2]][i,,indx[is.in]])
-    dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2",sep=".")
+    dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2", sep=".")
     tmp2 <- tmp2[,ok2]
     # Remove cases with !has.sigma
     tmp2 <- tmp2[,!apply(tmp2,2,function(x){all(is.na(x))})]
     lst[[i]] <- mcmc(cbind(tmp1,tmp2),thin=thin)
   }
   if (split) {
-    for (i in 1:n.chains) {
+    for (i in 1:nchain) {
       tmp1 <- t(hyper$phi[[1]][i,,indx[not.is.in]])
-      dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1",sep=".")
+      dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1", sep=".")
       tmp1 <- tmp1[,ok1]
       tmp2 <- t(hyper$phi[[2]][i,,indx[not.is.in]])
-      dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2",sep=".")
+      dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2", sep=".")
       tmp2 <- tmp2[,ok2]
       # Remove cases with !has.sigma
       tmp2 <- tmp2[,!apply(tmp2,2,function(x){all(is.na(x))})]
-      lst[[i+n.chains]] <- mcmc(cbind(tmp1,tmp2),thin=thin)
+      lst[[i + nchain]] <- mcmc(cbind(tmp1,tmp2),thin=thin)
     }
   }
   mcmc.list(lst)
@@ -424,7 +427,8 @@ summary.model <- function(object, hyper = FALSE, start = 1, end = NA,
     message("Random-effec model with multiple participants")
     hyper <- attr(object, "hyper")
     if (is.na(end)) end <- hyper$nmc
-    tmp <- summary(phi.as.mcmc.list(hyper, start=start, end=end))
+    tmp <- summary(phi.as.mcmc.list(hyper, start=start, end=end,
+      thin = hyper$thin))
 
     if (hmeans) {
       out <- matrix(tmp$statistics[, "Mean"], nrow = 2,
@@ -693,36 +697,59 @@ p.fun.dmc <- function(samples,fun,hyper=FALSE,ptype=1)
      as.vector(apply(attr(samples,"hyper")$phi[[ptype]],c(1,3),fun))
 }
 
+#' @importFrom matrixStats colSds
 #' @export
-CheckRecovery <- function(samples, p.vector, start, digits = 2, verbose = TRUE)
+CheckRecovery <- function(samples, p.vector, start, hyper = FALSE,
+  digits = 2, verbose = TRUE)
 {
-  if (missing(p.vector)) stop("Please supply true values.")
-  if (missing(start)) start <- samples$start
+  if (hyper) {
 
-  qs <- summary.dmc(samples, start = start)$quantiles
-  if (!is.null(p.vector) && (!all(dimnames(qs)[[1]] %in% names(p.vector))))
-    stop("Names of p.vector do not match parameter names in samples")
+    est <- summary(samples)
+    tmp <- t(data.frame(lapply(est, function(x){x[[1]][, 1]})))
+    mean.est <- colMeans(tmp)
+    mean.ps <- colMeans(p.vector)
+    sd.est <- matrixStats::colSds(tmp)
+    sd.ps <- matrixStats::colSds(p.vector)
 
-  est  <- qs[names(p.vector), "50%"]
+    pnames <- colnames(ps)
+    loc <- rbind(mean.est, mean.ps, mean.ps - mean.est)
+    sca <- rbind(sd.est, sd.ps, sd.ps - sd.est)
+    out <- rbind(loc, sca)
+    rownames(out) <- c("Mean", "True", "Diff", "Sd", "True", "Diff")
+    if (verbose) print(round(out, digits))
+    invisible(return(out))
 
-  op.vector <- p.vector[order(names(p.vector))]
-  oest <- est[order(names(est))]
-  bias <- oest- op.vector
+  } else {
+    if (missing(p.vector)) stop("Please supply true values.")
+    if (missing(start)) start <- samples$start
 
-  lo   <- qs[names(p.vector), "2.5%"]
-  hi   <- qs[names(p.vector), "97.5%"]
-  olo <- lo[order(names(lo))]
-  ohi <- hi[order(names(hi))]
+    qs <- summary.model(samples, start = start)$quantiles
+    if (!is.null(p.vector) && (!all(dimnames(qs)[[1]] %in% names(p.vector))))
+      stop("Names of p.vector do not match parameter names in samples")
 
-  out  <- rbind(
-    'True'          = op.vector,
-    '2.5% Estimate' = olo,
-    '50% Estimate'  = oest,
-    '97.5% Estimate'= ohi,
-    'Median-True'   = bias)
+    est  <- qs[names(p.vector), "50%"]
 
-  if (verbose) print(round(out, digits))
-  invisible(out)
+    op.vector <- p.vector[order(names(p.vector))]
+    oest <- est[order(names(est))]
+    bias <- oest- op.vector
+
+    lo   <- qs[names(p.vector), "2.5%"]
+    hi   <- qs[names(p.vector), "97.5%"]
+    olo <- lo[order(names(lo))]
+    ohi <- hi[order(names(hi))]
+
+    out  <- rbind(
+      'True'          = op.vector,
+      '2.5% Estimate' = olo,
+      '50% Estimate'  = oest,
+      '97.5% Estimate'= ohi,
+      'Median-True'   = bias)
+
+    if (verbose) print(round(out, digits))
+    invisible(return(out))
+  }
+
+
 }
 
 # CheckRecovery.stanfit <- function(fit, p.vector, pars, digits = 2,

@@ -789,7 +789,7 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
       sampler)
   }
 
-  class(out) <- "model"
+  class(out) <- c("model", "list")
   cat("\n")
   return(out)
 }

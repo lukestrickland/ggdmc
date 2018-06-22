@@ -177,6 +177,311 @@ pairs.dmc <- function(x, start=1, ...) {
   print( ggs_pairs(d, lower=list(continuous="density")) )
 }
 
+#' @export
+preplot <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
+  end = NA, pll = TRUE, bar = FALSE, together = TRUE, only.prior = FALSE,
+  only.like = FALSE, smooth = FALSE, density = FALSE, save = FALSE,
+  p.prior = NULL, natural = TRUE, trans = NA, chain1 = TRUE, ...) {
+
+  if (hyper) {
+    phi <- attr(x, "hyper")
+    if (is.null(phi)) stop("No hyperparameters")
+    if ( is.na(end) ) end <- phi$nmc
+    if ( end <= start ) stop("End must be greater than start")
+
+    if (pll | bar) {
+      lp <- phi$h_summed_log_prior[start:end,] +
+        phi$h_log_likelihoods[start:end,]
+      nchain <- dim(lp)[2]
+      colnames(lp) <- 1:nchain
+
+      if (bar) {
+        mean.lp <- colMeans(lp)
+        names(mean.lp) <- 1:length(mean.lp)
+        barplot(mean.lp, ylab = "Mean Post Like", main= "")
+        if (save) return(mean.lp)
+      } else {
+        if (together) {
+          d <- coda::mcmc.list( lapply(data.frame(lp),
+            function(xx) {mcmc(as.matrix(xx))} ))
+        } else {
+          d <- coda::mcmc(lp)
+        }
+      }
+    } else {
+      d <- phi.as.mcmc.list(phi, start = start, end = end)
+    }
+  } else if (!is.null(x$theta)) {
+
+    if ( is.na(end) ) end <- x$nmc
+    if ( end <= start ) stop("End must be greater than start")
+
+    if ( pll | bar ) {
+      if (only.prior) {
+        lp <- x$summed_log_prior[start:end,]
+      } else if (only.like) {
+        lp <- x$log_likelihoods[start:end,]
+      } else {
+        lp <- x$summed_log_prior[start:end,] +
+          x$log_likelihoods[start:end,]
+      }
+
+      colnames(lp) <- 1:dim(lp)[2]
+      if (bar) {
+        mean.lp <- colMeans(lp)
+        names(mean.lp) <- 1:length(mean.ll)
+        barplot(mean.lp, ylab="Mean Post Like", main="")
+        if (save) return(mean.lp)
+      } else {
+        if (together) {
+          d <- coda::mcmc.list(lapply(data.frame(lp),
+            function(xx){mcmc(as.matrix(xx))}))
+        } else {
+          d <- mcmc(lp) ## log-posterior likelihood
+        }
+      }
+    } else {
+      d <- mcmc.list.dmc(x, start = start, end = end)
+    }
+  } else if (!is.null(x[[1]]$theta)) {
+    message("Plot list")
+    plot_list(x)
+    d <- NULL
+  } else {
+    stop("Unknown class")
+  }
+
+  return(d)
+
+}
+
+#' @export
+#' @importFrom ggmcmc ggs
+plot.model <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
+  end = NA, pll = TRUE, bar = FALSE, together = TRUE, only.prior = FALSE,
+  only.like = FALSE, smooth = FALSE, density = FALSE, save = FALSE,
+  p.prior = NULL, natural = TRUE, trans = NA, chain1 = TRUE, ...) {
+
+  d <-  preplot(x, y, hyper, xlim, start, end, pll, bar, together,
+    only.prior, only.like, smooth, density, save, p.prior,
+    natural, trans, chain1)
+
+  if (!is.null(d)) {
+    DT <- ggmcmc::ggs(d)
+    DT$Chain <- factor(DT$Chain)
+    f1 <- ggmcmc::ggs_traceplot(DT) + theme(legend.position = "none")
+    if(!together) {
+      f1 <- f1 + facet_wrap(Chain~Parameter) +
+        theme(strip.text.x = element_blank())
+    }
+
+    if (pll) {
+      DT$Parameter <- "lp"
+      ## Output 1
+      f2 <- ggplot(DT) +
+        geom_line(aes(x = Iteration, y = value, color = Chain)) +
+        ylab("Log-posterior likelihood") +
+        theme_minimal() +
+        theme(legend.position = "none")
+
+      print(f2)
+      if(save) {return(DT)}
+
+    } else if (density) {
+      ## cat("When density is TRUE, plotting prior density is disable.")
+      f2 <- ggs_density(DT) +
+        ylab("Density") +
+        theme_minimal() +
+        theme(legend.position="none")
+
+      if (together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
+        theme(strip.text.x = element_blank())
+      }
+      ## Output 1
+      print(grid.arrange(f1, f2, ncol=2, nrow=1))
+      if(save) {return(DT)}
+    } else if (!is.null(p.prior)) {
+      df1 <- NULL
+      for(i in 1:length(p.prior)) {
+        xlim <- NA
+        if (attr(p.prior[[i]], "dist") != "constant") {
+
+          if (any(is.na(trans))) {
+            if (natural) trans <- attr(p.prior[[i]], "untrans")
+          } else { trans <- "identity" }
+
+          if (is.numeric(i)) i <- names(p.prior)[i]
+          if (!(i %in% names(p.prior))) stop("Parameter not in prior")
+          p <- p.prior[[i]]
+          p$log <- FALSE
+          niter <- attr(DT, "nIterations")
+
+          if (is.na(xlim)) xlim <- range(DT[DT$Parameter==i, "value"])
+          p$x <- seq(xlim[1], xlim[2], length.out=niter)
+          priorx <- do.call(trans, list(x=p$x))
+          priory <- do.call(paste0("d", attr(p, "dist")), p)
+          df0 <- data.frame(Iteration=1:niter, Chain=factor(0),
+            Parameter=factor(i), x=priorx, y=priory)
+          df1 <- rbind(df1, df0)
+        }
+      }
+      ## DT <- rbind(DT, df1)
+      ## Overwrite f2 to add chain 0 (ie prior chain)
+      if (chain1) {
+        DT1 <- DT[DT$Chain==1,]
+        attr(DT1, "nChains") <- attr(DT, "nChains")
+        f2 <- ggs_density(DT1) + ylab("Density")+
+          theme_minimal() +
+          geom_line(aes(x, y), df1)
+      } else {
+        f2 <- ggs_density(DT) + ylab("Density")+
+          theme_minimal() +
+          geom_line(aes(x, y), df1)
+      }
+
+      ## Output 2
+      invisible(print(f2))
+
+      if(save) {return(list(DT, df1))}
+    } else {
+      ## Output 3
+      invisible(print(f1))
+      if(save) {return(DT)}
+    }
+  } else {
+    invisible()
+  }
+
+}
+
+#' @export
+#' @importFrom ggmcmc ggs
+plot_one <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
+  end = NA, pll = TRUE, bar = FALSE, together = TRUE, only.prior = FALSE,
+  only.like = FALSE, smooth = FALSE, density = FALSE, save = FALSE,
+  p.prior = NULL, natural = TRUE, trans = NA, chain1 = TRUE, ...) {
+
+  if ( is.na(end) ) end <- x$nmc
+  if ( end <= start ) stop("End must be greater than start")
+
+  if ( pll | bar ) {
+      if (only.prior) {
+        lp <- x$summed_log_prior[start:end,]
+      } else if (only.like) {
+        lp <- x$log_likelihoods[start:end,]
+      } else {
+        lp <- x$summed_log_prior[start:end,] +
+          x$log_likelihoods[start:end,]
+      }
+
+      colnames(lp) <- 1:dim(lp)[2]
+      if (bar) {
+        mean.lp <- colMeans(lp)
+        names(mean.lp) <- 1:length(mean.ll)
+        barplot(mean.lp, ylab="Mean Post Like", main="")
+        if (save) return(mean.lp)
+      } else {
+        if (together) {
+          d <- coda::mcmc.list(lapply(data.frame(lp),
+            function(xx){mcmc(as.matrix(xx))}))
+        } else {
+          d <- mcmc(lp) ## log-posterior likelihood
+        }
+      }
+    } else {
+      d <- mcmc.list.dmc(x, start = start, end = end)
+  }
+
+  DT <- ggmcmc::ggs(d)
+  DT$Chain <- factor(DT$Chain)
+
+
+  f1 <- ggmcmc::ggs_traceplot(DT) + theme(legend.position = "none")
+  if(!together) {
+    f1 <- f1 + facet_wrap(Chain~Parameter) +
+      theme(strip.text.x = element_blank())
+  }
+
+  if (pll) {
+    DT$Parameter <- "lp"
+    ## Output 1
+    f2 <- ggplot(DT) +
+      geom_line(aes(x = Iteration, y = value, color = Chain)) +
+      ylab("Log-posterior likelihood") +
+      theme_minimal() +
+      theme(legend.position = "none")
+
+    print(f2)
+    if(save) {return(DT)}
+
+  } else if (density) {
+    ## cat("When density is TRUE, plotting prior density is disable.")
+    f2 <- ggs_density(DT) +
+      ylab("Density")+ theme_wsj()+
+      theme(legend.position="none")
+
+    if (!pll.together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
+      theme(strip.text.x = element_blank())
+    }
+    ## Output 1
+    print(grid.arrange(f1, f2, ncol=2, nrow=1))
+    if(save) {return(DT)}
+  } else if (!is.null(p.prior)) {
+    df1 <- NULL
+    for(i in 1:length(p.prior)) {
+      xlim <- NA
+      if (attr(p.prior[[i]], "dist") != "constant") {
+
+        if (any(is.na(trans))) {
+          if (natural) trans <- attr(p.prior[[i]], "untrans")
+        } else { trans <- "identity" }
+
+        if (is.numeric(i)) i <- names(p.prior)[i]
+        if (!(i %in% names(p.prior))) stop("Parameter not in prior")
+        p <- p.prior[[i]]
+        p$log <- FALSE
+        niter <- attr(DT, "nIterations")
+
+        if (is.na(xlim)) xlim <- range(DT[DT$Parameter==i, "value"])
+        p$x <- seq(xlim[1], xlim[2], length.out=niter)
+        priorx <- do.call(trans, list(x=p$x))
+        priory <- do.call(paste0("d", attr(p, "dist")), p)
+        df0 <- data.frame(Iteration=1:niter, Chain=factor(0),
+          Parameter=factor(i), x=priorx, y=priory)
+        df1 <- rbind(df1, df0)
+      }
+    }
+    ## DT <- rbind(DT, df1)
+    ## Overwrite f2 to add chain 0 (ie prior chain)
+    if (chain1) {
+      DT1 <- DT[DT$Chain==1,]
+      attr(DT1, "nChains") <- attr(DT, "nChains")
+      f2 <- ggs_density(DT1) + ylab("Density")+ theme_wsj() +
+        geom_line(aes(x, y), df1)
+    } else {
+      f2 <- ggs_density(DT) + ylab("Density")+ theme_wsj() +
+        geom_line(aes(x, y), df1)
+    }
+
+    ## Output 2
+    invisible(print(f2))
+
+    if(save) {return(list(DT, df1))}
+  } else {
+    ## Output 3
+    invisible(print(f1))
+    if(save) {return(DT)}
+  }
+}
+
+#' @export
+plot_list <- function(x) {
+    pdf("pll.pdf")
+    for(i in 1:length(x)) plot_one(x[[i]])
+    dev.off()
+}
+
+
 #' Plot DMC Samples
 #'
 #' Plot trace and probability desntiy, using a model samples.
@@ -251,21 +556,22 @@ pairs.dmc <- function(x, start=1, ...) {
 #' ## plot(samples0, start=101)
 #' ## plot(samples0, start=101, density=TRUE)
 #' ## plot(samples0, pll.chain=TRUE)
-plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
-  pll.chain = TRUE, pll.together=TRUE, pll.barplot=FALSE, only.prior=FALSE,
-  only.like=FALSE, smooth=FALSE, density=FALSE, save.dat=FALSE,
-  p.prior=NULL, natural=TRUE, trans=NA, xlim=NA, chain1=TRUE, ...)
-{
+plot.model_bk <- function(x, y = NULL, xlim=NA, start=1, end=NA, save.ll=FALSE,
+  main.pll=NULL, pll.chain = TRUE, pll.together=TRUE, pll.barplot=FALSE,
+  only.prior=FALSE, only.like=FALSE, smooth=FALSE, density=FALSE, save.dat=FALSE,
+  p.prior=NULL, natural=TRUE, trans=NA, chain1=TRUE, ...) {
 
   if ( is.na(end) ) end <- x$nmc
   if ( end <= start ) stop("End must be greater than start")
+
   if ( pll.chain | pll.barplot ) {
     if (only.prior) {
       chain.pll <- x$summed_log_prior[start:end,]
     } else if (only.like) {
       chain.pll <- x$log_likelihoods[start:end,]
     } else {
-      chain.pll <- x$summed_log_prior[start:end,]+x$log_likelihoods[start:end,]
+      chain.pll <- x$summed_log_prior[start:end,] +
+        x$log_likelihoods[start:end,]
     }
 
     colnames(chain.pll) <- 1:dim(chain.pll)[2]
@@ -278,6 +584,7 @@ plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
       if (!pll.together) {
         d <- mcmc(chain.pll)
       } else {
+        ## log-posterior likelihood
         d <- coda::mcmc.list(lapply(data.frame(chain.pll),
           function(xx){mcmc(as.matrix(xx))}))
       }
@@ -287,17 +594,29 @@ plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
   }
 
 
-  DT <- ggs(d)
+  DT <- ggmcmc::ggs(d)
   DT$Chain <- factor(DT$Chain)
 
-  f1 <- ggs_traceplot(DT) + theme_fivethirtyeight() +
-    theme(legend.position="none")
+  f1 <- ggmcmc::ggs_traceplot(DT) + theme(legend.position = "none")
   if(!pll.together) {
     f1 <- f1 + facet_wrap(Chain~Parameter) +
       theme(strip.text.x = element_blank())
   }
 
-  if (density) {
+
+  if (pll.chain) {
+    DT$Parameter <- "lp"
+    ## Output 1
+    f2 <- ggplot(DT) +
+      geom_line(aes(x = Iteration, y = value, color = Chain)) +
+      ylab("Log-posterior likelihood") +
+      theme_minimal() +
+      theme(legend.position = "none")
+
+    print(f2)
+    if(save.dat) {return(DT)}
+
+  } else if (density) {
     ## cat("When density is TRUE, plotting prior density is disable.")
     f2 <- ggs_density(DT) +
       ylab("Density")+ theme_wsj()+
@@ -306,8 +625,6 @@ plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
     if (!pll.together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
       theme(strip.text.x = element_blank())
     }
-
-
     ## Output 1
     print( grid.arrange(f1, f2, ncol=2, nrow=1) )
     if(save.dat) {return(DT)}
@@ -355,466 +672,6 @@ plot.model <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE, main.pll=NULL,
   } else {
     ## Output 3
     invisible(print(f1))
-    if(save.dat) {return(DT)}
-  }
-}
-
-#' Plot a DMC Sample with Multiple Participants
-#'
-#' Plot trace and probability desntiy, using a model samples. This function
-#' taks a sample list.
-#'
-#' @param x a \code{run.dmc} or \code{samples.dmc} generated model samples
-#' @param y default NULL. No function. Just to make it compatible to
-#' \code{plot}
-#' @param start instruct the function to plot starting from which iteration.
-#' This indicates how many burn-in interations one requests. For example,
-#' start=101, indicates 100 burn-in interations.
-#' @param end instruct the function to plot ending at a certain iteration
-#' @param save.ll a boolean switch to tell the function to save the mean
-#' log-likelihood. This option does not work in DMC's plot.dmc, too.
-#' @param main.pll a string as the title for the boxplot. Default is NULL
-#' @param pll.chain a boolean switch to plot posterior log likelihoood
-#' @param pll.together a boolean switch to plot the posterior log-likelihood
-#' chains all together in one canvar
-#' @param pll.barplot a boolean switch to plot the means of posterior
-#' log-likelihood of all chains as a barplot. By default, it is off.
-#' @param only.prior Default is FALSE
-#' @param only.like Default is FALSE. only.prior and only.like two switches
-#' to plot only prior density or only log-likelihood probability.
-#' @param smooth default FALSE
-#' @param density plot probability density together with trace? Default FALSE
-#' @param save.dat whether save the internal data table out for polish plots
-#' @param p.prior prior distribution setting. necessary for plot.prior to work
-#' @param natural additional argument for plot.prior
-#' @param trans additional argument for plot.prior
-#' @param xlim additional argument for plot.prior
-#' @param chain1 plot all chains or just chain1
-#' @param subject which subject in the list to plot. Default the 1st one.
-#' @param ... other arguments
-#' @export
-#' @import ggplot2
-#' @importFrom coda mcmc mcmc.list
-#' @importFrom ggmcmc ggs ggs_density ggs_traceplot
-#' @importFrom ggthemes theme_fivethirtyeight theme_wsj
-#' @importFrom gridExtra grid.arrange
-#' @importFrom graphics barplot
-#' @examples
-#' m1 <- model.dmc(
-#' p.map     = list(a="1",v="1",z="1",d="1",sz="1",sv="1",t0="1",st0="1"),
-#' match.map = list(M=list(s1="r1", s2="r2")),
-#' factors   = list(S=c("s1", "s2")),
-#' constants = c(st0=0, d=0),
-#' responses = c("r1","r2"),
-#' type      = "rd")
-#'
-#' ## Population distribution
-#' pop.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1    = c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2    = c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05),
-#'   lower = c(0,-5, 0, 0, 0, 0),
-#'   upper = c(5, 7, 2, 2, 2, 2))
-#'
-#' dat <- h.simulate.dmc(m1, p.prior=pop.prior, n=50, ns=4)
-#' mdi <- BindDataModel(dat, m1)
-#' p.prior  <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1    = c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2    = c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05) * 5,
-#'   lower = c(0,-5, 0, 0, 0, 0),
-#'   upper = c(5, 7, 2, 2, 2, 2))
-#'
-#' ## Fixed-effect model
-#' samplesInit <- h.samples.dmc(nmc=50, p.prior=p.prior, data=mdi, thin=1)
-#' samples0    <- h.run.dmc(samples=samplesInit, report=25)
-#' ## Windows tests produce a grid.Call problem. The user should use
-#' ## with caution.
-#' ## plot(samples0) ## traceplot for the first participant
-#' ## plot(samples0, density=TRUE)  ## trace- and density-plot
-#' ## plot(samples0, density=TRUE, subject=2) ## Plot second participant
-#' ## plot(samples0, density=TRUE, subject=3, start=101) ## From 101 iteration
-#' ## Plot iteratoin 201 to 400
-#' ## plot(samples0, density=TRUE, subject=4, start=201, end=400)
-plot.dmc.list <- function(x, y=NULL, start=1, end=NA, save.ll=FALSE,
-  main.pll=NULL, pll.chain=FALSE, pll.together=TRUE, pll.barplot=FALSE,
-  only.prior=FALSE, only.like=FALSE, smooth=FALSE, density=FALSE,
-  save.dat=FALSE, p.prior=NULL, natural=TRUE, trans=NA,
-  xlim=NA, chain1=TRUE, subject=1, ...)
-{
-  x <- x[[subject]]
-  if ( is.na(end) ) end <- x$nmc
-  if ( end <= start ) stop("End must be greater than start")
-  if ( pll.chain | pll.barplot ) {
-    if (only.prior) {
-      chain.pll <- x$summed_log_prior[start:end,]
-    } else if (only.like) {
-      chain.pll <- x$log_likelihoods[start:end,]
-    } else {
-      chain.pll <- x$summed_log_prior[start:end,] +
-        x$log_likelihoods[start:end,]
-    }
-
-    colnames(chain.pll) <- 1:dim(chain.pll)[2]
-    if (pll.barplot) {
-      mean.ll        <- colMeans(chain.pll)
-      names(mean.ll) <- 1:length(mean.ll)
-      barplot(mean.ll, ylab="Mean Post Like", main=main.pll)
-      if (save.ll) return(mean.ll)
-    } else {
-      if (!pll.together) {
-        d <- mcmc(chain.pll)
-      } else {
-        d <- coda::mcmc.list(lapply(data.frame(chain.pll),
-          function(xx){mcmc(as.matrix(xx))}))
-      }
-    }
-  } else {
-    d <- mcmc.list.dmc(x, start=start, end=end)
-  }
-
-
-  DT <- ggs(d)
-  DT$Chain <- factor(DT$Chain)
-
-  f1 <- ggs_traceplot(DT) + theme_fivethirtyeight() +
-    theme(legend.position="none")
-  if(!pll.together) {
-    f1 <- f1 + facet_wrap(Chain~Parameter) +
-      theme(strip.text.x = element_blank())
-  }
-
-  if (density) {
-    ## cat("When density is TRUE, plotting prior density is disable.")
-    f2 <- ggs_density(DT) +
-      ylab("Density")+ theme_wsj()+
-      theme(legend.position="none")
-
-    if (!pll.together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
-      theme(strip.text.x = element_blank())
-    }
-
-
-    ## Output 1
-    print( grid.arrange(f1, f2, ncol=2, nrow=1) )
-    if(save.dat) {return(DT)}
-  } else if (!is.null(p.prior)) {
-    df1 <- NULL
-    for(i in 1:length(p.prior)) {
-      xlim <- NA
-      if (attr(p.prior[[i]], "dist") != "constant") {
-
-        if (any(is.na(trans))) {
-          if (natural) trans <- attr(p.prior[[i]], "untrans")
-        } else { trans <- "identity" }
-
-        if (is.numeric(i)) i <- names(p.prior)[i]
-        if (!(i %in% names(p.prior))) stop("Parameter not in prior")
-        p <- p.prior[[i]]
-        p$log <- FALSE
-        niter <- attr(DT, "nIterations")
-
-        if (is.na(xlim)) xlim <- range(DT[DT$Parameter==i, "value"])
-        p$x <- seq(xlim[1], xlim[2], length.out=niter)
-        priorx <- do.call(trans, list(x=p$x))
-        priory <- do.call(paste0("d", attr(p, "dist")), p)
-        df0 <- data.frame(Iteration=1:niter, Chain=factor(0),
-          Parameter=factor(i), x=priorx, y=priory)
-        df1 <- rbind(df1, df0)
-      }
-    }
-    ## DT <- rbind(DT, df1)
-    ## Overwrite f2 to add chain 0 (ie prior chain)
-    if (chain1) {
-      DT1 <- DT[DT$Chain==1,]
-      attr(DT1, "nChains") <- attr(DT, "nChains")
-      f2 <- ggs_density(DT1) + ylab("Density")+ theme_wsj() +
-        geom_line(aes(x, y), df1)
-    } else {
-      f2 <- ggs_density(DT) + ylab("Density")+ theme_wsj() +
-        geom_line(aes(x, y), df1)
-    }
-
-    ## Output 2
-    print(f2)
-    if(save.dat) {return(list(DT, df1))}
-  } else {
-    ## Output 3
-    print(f1)
-    if(save.dat) {return(DT)}
-  }
-}
-
-
-#' Plot DMC Samples at the Hyper level
-#'
-#' Plot trace and probability desntiy. This method provides a switch to choose
-#' plotting at the data or hyper level. The samples must be an object fit by
-#' a hierarchical model.
-#'
-#' @param x \code{run.dmc} or \code{samples.dmc} generated model samples
-#' @param y default NULL. No function. Just to make it compatible to
-#' \code{plot}
-#' @param hyper a boolean switch to draw hyper-parameter. By default it is off.
-#' @param start instruct the function to plot starting from which iteration.
-#' This indicates how many burn-in interations one requests. For example,
-#' start=101, indicates 100 burn-in interations.
-#' @param end instruct the function to plot ending at a certain iteration
-#' @param save.ll a boolean switch to tell the function to save the mean
-#' log-likelihood. This option does not work in DMC's plot.dmc, too.
-#' @param main.pll a string as the title for the boxplot. Default is NULL
-#' @param pll.chain a boolean switch to plot posterior log likelihoood
-#' @param pll.together a boolean switch to plot the posterior log-likelihood
-#' chains all together in one canvar
-#' @param pll.barplot a boolean switch to plot the means of posterior
-#' log-likelihood of all chains as a barplot. By default, it is off.
-#' @param only.prior only.prior and only.like pick out one or other
-#' component of pll.
-#' @param only.like a boolean switch.
-#' @param subject indicate which subject to plot in a multi-subject list
-#' samples
-#' @param smooth default FALSE
-#' @param density plot probability density too?
-#' @param save.dat whether save the internal data table out for polish plots
-#' @param p.prior prior distribution setting. necessary for plot.prior to work
-#' @param natural additional argument for plot.prior
-#' @param trans additional argument for plot.prior
-#' @param xlim additional argument for plot.prior
-#' @param chain1 plot all chains or just chain1 as coda does
-#' @param ... other arguments
-#' @keywords plot.dmc
-#' @export
-#' @import ggplot2
-#' @importFrom coda mcmc mcmc.list
-#' @importFrom ggmcmc ggs ggs_density ggs_traceplot
-#' @importFrom ggthemes theme_fivethirtyeight theme_wsj
-#' @importFrom gridExtra grid.arrange
-#' @importFrom graphics barplot
-#' @examples
-#' m1 <- model.dmc(
-#' p.map     = list(a="1",v="1",z="1",d="1",sz="1",sv="1",t0="1",st0="1"),
-#' match.map = list(M=list(s1="r1", s2="r2")),
-#' factors   = list(S=c("s1", "s2")),
-#' constants = c(st0=0, d=0),
-#' responses = c("r1","r2"),
-#' type      = "rd")
-#'
-#' ## Population distribution
-#' pop.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1    = c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2    = c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05),
-#'   lower = c(0,-5, 0, 0, 0, 0),
-#'   upper = c(5, 7, 2, 2, 2, 2))
-#'
-#' dat <- h.simulate.dmc(m1, p.prior=pop.prior, n=50, ns=4)
-#' mdi <- BindDataModel(dat, m1)
-#' p.prior  <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1    = c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2    = c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05) * 5,
-#'   lower = c(0,-5, 0, 0, 0, 0),
-#'   upper = c(5, 7, 2, 2, 2, 2))
-#'
-#' ## Fixed-effect model
-#' samplesInit <- h.samples.dmc(nmc=100, p.prior=p.prior, data=mdi, thin=1)
-#' samples0    <- h.run.dmc(samples=samplesInit, report=20)
-#'
-#' ## Make a hyper-prior list
-#' mu.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1    = c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2    = c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05) * 5,
-#'   lower = c(0,-5, 0, 0, 0, 0),
-#'   upper = c(5, 7, 2, 2, 2, 2))
-#'
-#' sigma.prior <- prior.p.dmc(
-#'   dists = rep("beta", 6),
-#'   p1    = c(a=1, v=1, z=1, sz=1, sv=1, t0=1),
-#'   p2    = c(1,1,1,1,1,1),
-#'   upper = c(2,2,2,2,2,2))
-#'
-#' pp.prior <- list(mu.prior, sigma.prior)
-#'
-#' ## Random-effect model
-#' hsamplesInit <- h.samples.dmc(nmc=50, p.prior=p.prior, pp.prior=pp.prior,
-#'   data=mdi, thin=1)
-#' hsamples0 <- h.run.dmc(samples=hsamplesInit)
-#'
-#' ## Windows Testing errors
-#' ## plot(hsamples0) ## Only first participant
-#' ## plot(hsamples0, hyper=TRUE) ## Group-level parameters
-#' ## plot(hsamples0, hyper=TRUE, density=TRUE) ## Trace and density plots
-#'
-#' ## plot(hsamples0, p.prior=p.prior) ## plot prior and posterior
-#' ## plot(hsamples0, p.prior=pp.prior, hyper=TRUE) ## hyper-level
-#'
-#' ## plot(hsamples0, hyper=TRUE, start=101) ## starting from 101th iteration
-#' ## plot(hsamples0, hyper=TRUE, density=TRUE, start=101)
-#'
-#' ## Plot posterior likelihood
-#' ## plot(hsamples0, hyper=TRUE, pll.chain=TRUE, start=21)
-#'
-#' ## Save plot data for modifying
-#' ## D <- plot(hsamples0, hyper=TRUE, save.dat=TRUE)
-#' ## head(D)
-#' ## Source: local data frame [6 x 4]
-#' ##   Iteration  Chain Parameter    value
-#' ##       (int) (fctr)    (fctr)    (dbl)
-#' ## 1         1      1      a.h1 2.184504
-#' ## 2         2      1      a.h1 2.184504
-#' ## 3         3      1      a.h1 2.184504
-#' ## 4         4      1      a.h1 2.501221
-#' ## 5         5      1      a.h1 2.501221
-#' ## 6         6      1      a.h1 2.501221
-plot.hyper <- function(x, y=NULL, hyper=FALSE, start=1, end=NA,
-  save.ll=FALSE, main.pll=NULL, pll.chain=FALSE, pll.together=TRUE,
-  pll.barplot=FALSE, only.prior=FALSE, only.like=FALSE,
-  subject=1, smooth=FALSE, density=FALSE, save.dat=FALSE,
-  p.prior=NULL, natural=TRUE, trans=NA,
-  xlim=NA, chain1=TRUE, ...)
-{
-  if ( hyper ) {
-    hyper.dat <- attr(x, "hyper")
-    if (is.null(hyper.dat)) stop("There are no hyper-parameters to plot.")
-    if ( is.na(end) ) end <- hyper.dat$nmc
-    if ( end <= start ) stop("End must be greater than start")
-    if ( pll.chain | pll.barplot ) {
-      chain.pll <- hyper.dat$h_summed_log_prior[start:end,] +
-        hyper.dat$h_log_likelihoods[start:end,]
-      colnames(chain.pll) <- 1:dim(chain.pll)[2]
-      if (pll.barplot) {
-        mean.ll <- colMeans(chain.pll)
-        names(mean.ll) <- 1:length(mean.ll)
-        barplot(mean.ll,ylab="Mean Post Like",main=main.pll)
-        if (save.ll) return(mean.ll)
-      } else {
-        if(!pll.together) {
-          d <- coda::mcmc(chain.pll)
-        } else {
-          d <- coda::mcmc.list(lapply(data.frame(chain.pll),
-            function(xx){mcmc(as.matrix(xx))}))
-        }
-      }
-    } else {
-      d <- phi.as.mcmc.list(hyper.dat, start=start,end=end)
-    }
-  } else {
-    x <- x[[subject]]
-    if ( is.na(end) ) end <- x$nmc
-    if ( end <= start ) stop("End must be greater than start")
-    if ( pll.chain | pll.barplot ) {
-      if (only.prior) {
-        chain.pll <- x$summed_log_prior[start:end,]
-      } else if (only.like) {
-        chain.pll <- x$log_likelihoods[start:end,]
-      } else {
-        chain.pll <- x$summed_log_prior[start:end,] +
-          x$log_likelihoods[start:end,]
-      }
-
-      colnames(chain.pll) <- 1:dim(chain.pll)[2]
-      if (pll.barplot) {
-        mean.ll        <- colMeans(chain.pll)
-        names(mean.ll) <- 1:length(mean.ll)
-        barplot(mean.ll, ylab="Mean Post Like", main=main.pll)
-        if (save.ll) return(mean.ll)
-      } else {
-        if (!pll.together) {
-          d <- mcmc(chain.pll)
-        } else {
-          d <- coda::mcmc.list(lapply(data.frame(chain.pll),
-            function(xx){mcmc(as.matrix(xx))}))
-        }
-      }
-    } else {
-      d <- ggdmc::mcmc.list.dmc(x, start=start, end=end)
-    }
-  }
-
-  DT <- ggs(d)
-  DT$Chain <- factor(DT$Chain)
-
-  f1 <- ggs_traceplot(DT) + theme_fivethirtyeight() +
-    theme(legend.position="none")
-
-  if(!pll.together) {
-    f1 <- f1 + facet_wrap(Chain~Parameter) +
-      theme(strip.text.x = element_blank())
-  }
-
-  if (hyper) { f1 <- f1 + facet_wrap(~Parameter) }
-
-  if (density) {
-    ## cat("When density is TRUE, plotting prior density is disable.\n")
-    f2 <- ggs_density(DT) +
-      ylab("Density")+ theme_wsj()+
-      theme(legend.position="none")
-
-    if (!pll.together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
-      theme(strip.text.x = element_blank())
-    }
-
-    if (hyper) { f2 <- f2 + facet_wrap(~Parameter) }
-
-    ## Output 1
-    print( grid.arrange(f1, f2, ncol=2, nrow=1) )
-    if(save.dat) {return(DT)}
-  } else if (!is.null(p.prior)) {
-
-    if (length(p.prior) == 2 & hyper) {
-      pp.prior <- c(p.prior[[1]], p.prior[[2]])
-      if (all(names(p.prior[[1]]) == names(p.prior[[2]])))
-        location <- paste(names(p.prior[[1]]),"h1", sep=".")
-      scale    <- paste(names(p.prior[[2]]),"h2", sep=".")
-      names(pp.prior) <- c(location, scale)
-      p.prior <- pp.prior ## overwrite p.prior with pp.prior.new
-    }
-
-    df1 <- NULL
-    for(i in 1:length(p.prior)) {
-      xlim <- NA
-      if (attr(p.prior[[i]], "dist") != "constant") {
-
-        if (any(is.na(trans))) {
-          if (natural) trans <- attr(p.prior[[i]], "untrans")
-        } else { trans <- "identity" }
-
-        if (is.numeric(i)) i <- names(p.prior)[i]
-        if (!(i %in% names(p.prior))) stop("Parameter not in prior")
-        p <- p.prior[[i]]
-        p$log <- FALSE
-        niter <- attr(DT, "nIterations")
-
-        if (is.na(xlim)) xlim <- range(DT[DT$Parameter==i, "value"])
-        p$x    <- seq(xlim[1], xlim[2], length.out=niter)
-        priorx <- do.call(trans, list(x=p$x))
-        priory <- do.call(paste0("d", attr(p, "dist")), p)
-        df0 <- data.frame(Iteration=1:niter, Chain=factor(0),
-          Parameter=factor(i), x=priorx, y=priory)
-        df1 <- rbind(df1, df0)
-      }
-    }
-
-    ## Overwrite f2 to add chain 0 (ie prior chain)
-    if (chain1) {
-      DT1 <- DT[DT$Chain==1,]
-      attr(DT1, "nChains") <- attr(DT, "nChains")
-      f2 <- ggs_density(DT1) + ylab("Density")+ theme_wsj() +
-        geom_line(aes(x, y), df1)
-    } else {
-      f2 <- ggs_density(DT) + ylab("Density")+ theme_wsj() +
-        geom_line(aes(x, y), df1)
-    }
-
-    ## if (hyper) { f2 <- f2 + facet_wrap(~Parameter, scales="free") }
-
-    ## Output 2
-    print(f2)
-    if(save.dat) {return(list(DT, df1))}
-  } else {
-    ## Output 3
-    print(f1)
     if(save.dat) {return(DT)}
   }
 }

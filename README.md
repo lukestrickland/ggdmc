@@ -133,18 +133,21 @@ hsam0 <- ggdmc::run(hsam0, pm = .1)
 
 ## How to pipe DMC samples to _ggdmc_ samplers 
 Diffusion-decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
-cognitive model to fit choice RT data in cognitive psychology.  Here I 
-show an exampling, fitting full DDM model.  The second aim of this example
-is to show how to pipe DMC samples to fast DE-MCMC sampler.  The speed-up
-is usually 9 to 10 times.
+cognitive models to fit choice RT data in cognitive psychology.  Here we 
+show two examples, one fitting the LBA model and the other fitting DDM 
+model.  The speed-up is be up to 9 times quicker.
 
 ```
+###################
+##   LBA model   ##
+###################
+
 ## DMC could be downloaded at "osf.io/pbwx8".
 setwd("~/Documents/DMCpaper/")
 source ("dmc/dmc.R")
 load_model ("LBA","lba_B.R")
 setwd("~/Documents/ggdmc_paper/")
-load("data/dmc_pipe_LBA.rda")
+## load("data/dmc_pipe_LBA.rda")
 
 model <- model.dmc(p.map = list( A = "1", B = "R", t0 = "1",
                                 mean_v = c("F", "M"), sd_v = "M", st0 = "1"),
@@ -168,7 +171,7 @@ pop.prior <- prior.p.dmc(
 raw.data <- h.simulate.dmc(model, p.prior = pop.prior, n = 250, ns = 40)
 data.model <- data.model.dmc(raw.data, model)
 
-ps <- round( attr(raw.data, "parameters"), 2)
+ps <- attr(raw.data, "parameters")
 
 p.prior <- prior.p.dmc(
   dists = rep("tnorm",9),
@@ -192,14 +195,109 @@ pp.prior <- list(mu.prior, sigma.prior)
 hsamples <- h.samples.dmc(nmc = 512, p.prior, data.model, pp.prior = pp.prior,
   thin = 64)
 
-
 ## Piping 
-time0 <- system.time(hsam0 <- ggdmc::run(hsamples, pm = .05))
+hsam0 <- ggdmc::run(hsamples, pm = .05)
 
 ## Turn off migration. Default pm = 0
-hsam1 <- h.samples.dmc(nmc = 512, p.prior, samples = hsam0, 
-  pp.prior = pp.prior, thin = 64)
-time1 <- system.time(hsam1 <- ggdmc::run(hsam1))
+hsam1 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior, samples = hsam0, 
+  pp.prior = pp.prior, thin = 64))
+hsam2 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior, samples = hsam1,
+   pp.prior = pp.prior, thin = 64))
+hsam3 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior, samples = hsam3,
+  pp.prior = pp.prior, thin = 32))
+
+## Check whether MCMC converge
+plot(hsam3, hyper = TRUE)
+plot(hsam3)
+
+est <- CheckRecovery(hsam3, p.vector = ps, hyper = TRUE)
+hest <- summary(hsam3, hyper = TRUE)
+est <- summary(hsam3)
+
+
+###################
+##   DDM         ##
+###################
+rm(list = ls())
+setwd("~/Documents/DMCpaper")
+source ("dmc/dmc.R")
+load_model ("DDM", "ddm.R")
+setwd("~/Documents/ggdmc_paper/")
+## load("data/hierarchical/dmc_pipe_DDM.rda")
+model <- model.dmc(
+    p.map     = list(a = "1", v = "F", z = "1", d = "1", sz = "1", sv = "1",
+                     t0 = "1", st0 = "1"),
+  match.map = list(M = list(s1 = "r1", s2 = "r2")),
+  factors   = list(S = c("s1", "s2"), F = c("f1", "f2")),
+  constants = c(st0 = 0, d = 0),
+  responses = c("r1", "r2"),
+  type      = "rd")
+  
+## Population distribution
+pop.mean <- c(a=2,  v.f1=4, v.f2=3, z=0.5, sz=0.3, sv=1, t0=0.3)
+pop.scale <-c(a=0.5,v.f1=.5,v.f2=.5,z=0.1, sz=0.1, sv=.3,t0=0.05)
+pop.prior <- prior.p.dmc(
+   dists = rep("tnorm", 7),
+   p1    = pop.mean,
+   p2    = pop.scale,
+   lower = c(0,-5, -5, 0, 0, 0, 0),
+   upper = c(5, 7,  7, 1, 2, 1, 1) )
+
+raw.data   <- h.simulate.dmc(model, p.prior = pop.prior, n = 32, ns = 8)
+data.model <- data.model.dmc(raw.data, model)
+ps <- attr(raw.data, "parameters")
+
+p.prior <- prior.p.dmc(
+  dists = c("tnorm","tnorm","tnorm","tnorm","tnorm","tnorm","tnorm"),
+  p1=pop.mean,
+  p2=pop.scale*5,
+  lower=c(0,-5, -5, 0, 0, 0, 0),
+  upper=c(5, 7,  7, 1, 2, 1, 1)
+)
+
+mu.prior <- prior.p.dmc(
+  dists = c("tnorm","tnorm","tnorm","tnorm","tnorm","tnorm","tnorm"),
+  p1=pop.mean,
+  p2=pop.scale*5,
+  lower=c(0,-5, -5, 0, 0, 0, 0),
+  upper=c(5, 7,  7, 1, 2, 1, 1)
+)
+sigma.prior <- prior.p.dmc(
+  dists = rep("beta", length(p.prior)),
+  p1=c(a=1, v.f1=1,v.f2 = 1, z=1, sz=1, sv=1, t0=1),
+  p2=c(1,1,1,1,1,1,1),
+  upper=c(2,2,2,2,2,2,2)
+)
+
+pp.prior <- list(mu.prior, sigma.prior)
+  
+## Sampling  
+hsam0 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior = p.prior, 
+      pp.prior = pp.prior, data = data.model, thin = 2), pm = .1)
+
+hsam1 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior = p.prior, 
+      pp.prior = pp.prior, samples = hsam0, thin = 32), pm = .1)
+
+hsam2 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior = p.prior, 
+      pp.prior = pp.prior, samples = hsam1, thin = 128), pm = .3)
+
+hsam3 <- ggdmc::run(h.samples.dmc(nmc = 512, p.prior = p.prior, 
+      pp.prior = pp.prior, samples = hsam2, thin = 2))
+      
+save(time3, time2, time1, time0, hsam0, hsam1, hsam2, hsam3, data.model,
+     pp.prior, ps, p.prior, raw.data, file = "data/dmc_pipe_DDM.rda") 
+     
+## MCMC converge
+plot(hsam3, hyper = TRUE)
+plot(hsam3)
+
+est1 <- CheckRecovery(hsam3, p.vector = ps, hyper = TRUE)
+hest <- summary(hsam3, hyper = TRUE)
+est2 <- summary(hsam3)
+
+tmp <- t(data.frame(lapply(est2, function(x){x[[1]][, 1]})))
+round(ps - tmp, 2)
+
 
 ```
 
@@ -224,15 +322,12 @@ Successful cases for Windows OS:
     Windows 10 64 bits.
   - Microsoft Visual Studio Community 2015 (Version 14.0.24720.1 Update 1), 
     with Rtools 3.4 on Windows 10 64 bits.
-  
-Unsuccseeful cases for Windows OS:
-  - Microsoft Blend for Visual Studio Express 2015   
 
 ## Installing
 
 ```
 From CRAN: install.packages("ggdmc")
-From source: install.packages("ggdmc_0.1.9.9.tar.gz", repos = NULL, type="source")
+From source: install.packages("ggdmc_0.2.0.0.tar.gz", repos = NULL, type="source")
 
 ```
 
@@ -242,7 +337,7 @@ If you use this package, please cite the software, for example:
 
 Lin, Y.-S., & Heathcote, A (in preparation). Distributed Genetic Monte Carlo is 
 as Effective as Hamiltonian Monte Carlo in Fitting High Dimension Cognitive 
-Model. Retrieved from https://github.com/TasCL/ggdmc
+Model. Manuscript in preparation.  Retrieved from https://github.com/TasCL/ggdmc
 
 ## Contributors
 
