@@ -32,6 +32,7 @@ arma::mat check_finite(arma::vec RT, arma::vec R, bool debug) {
 // [[Rcpp::export]]
 arma::vec spdf(arma::vec x, arma::vec RT, int n, double h_in,
   bool debug = false) {
+  // do not change "int n" to "unsigned int n"
   unsigned int nx  = x.n_elem;
   unsigned int nRT = RT.n_elem; // if defective densities, nRT != n
   arma::vec out(nx);

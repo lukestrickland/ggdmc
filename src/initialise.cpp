@@ -158,14 +158,12 @@ List init_add(unsigned int nmc, List samples, double rp,
 List init_newnonhier(unsigned int nmc, List data, List pprior,
   double rp, unsigned int thin, unsigned int nchain) {
 
-  List out(data.size());
-  for (size_t i = 0; i < data.size(); i++) {
+  unsigned int nsub = data.size();
+  List out(nsub);
+
+  for (size_t i = 0; i < nsub; i++) {
     out[i] = init_new(nmc, pprior, data[i], rp, thin, nchain);
   }
-
-  // List init_new(unsigned int nmc, List pprior, List data, double rp = .001,
-  //   unsigned int thin = 1, unsigned int nchain = 3, unsigned int ncore = 1,
-  //   bool debug = false)
 
   out.attr("names") = data.attr("names");
   return out;
@@ -175,8 +173,11 @@ List init_newnonhier(unsigned int nmc, List data, List pprior,
 // [[Rcpp::export]]
 List init_oldnonhier(unsigned int nmc, List samples, double rp,
   unsigned int thin) {
-  List out(samples.size());
-  for (size_t i = 0; i < samples.size(); i++) {
+
+  unsigned int nsub = samples.size();
+  List out(nsub);
+
+  for (size_t i = 0; i < nsub; i++) {
     out[i] = init_old(nmc, samples[i], rp, thin);
   }
 
@@ -188,8 +189,11 @@ List init_oldnonhier(unsigned int nmc, List samples, double rp,
 // [[Rcpp::export]]
 List init_addnonhier(unsigned int nmc, List samples, double rp,
   unsigned int thin) {
-  List out(samples.size());
-  for (size_t i = 0; i < samples.size(); i++) {
+
+  unsigned int nsub = samples.size();
+  List out(nsub);
+
+  for (size_t i = 0; i < nsub; i++) {
     out[i] = init_add(nmc, samples[i], rp, thin);
   }
   out.attr("names") = samples.attr("names");

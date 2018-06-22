@@ -50,7 +50,4 @@ class(samples0)
 ## [1] "dmc"
 summary(samples0)
 }
-\seealso{
-\code{\link{summary.dmc.list}, \link{summary.hyper}}
-}
 \keyword{summary}

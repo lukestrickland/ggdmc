@@ -465,7 +465,6 @@ blocked.h.crossover <- function(k,blocks,n.pars,use.phi,use.logprior,use.loglike
 }
 
 
-#' @rdname h.run.dmc
 #' @export
 checkforce <- function(force = FALSE, nsamp = NA) {
   if( is.na(nsamp) ) stop("nsamp not found")
@@ -477,7 +476,6 @@ checkforce <- function(force = FALSE, nsamp = NA) {
   return(force)
 }
 
-#' @rdname h.run.dmc
 #' @export
 checkblocks <- function(blocks, hyper) {
   if ( any(is.na(blocks)) ) {

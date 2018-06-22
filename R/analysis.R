@@ -391,7 +391,6 @@ effectiveSize.dmc <- function(x, hyper=FALSE, digits=0,start=1,end=NA)
 #' from 101 to 1000 iteration. Default uses the last iteration.
 #' @param ... other arguments
 #' @keywords summary
-#' @seealso \code{\link{summary.dmc.list}, \link{summary.hyper}}
 #' @export
 #' @examples
 #' m1 <- model.dmc(

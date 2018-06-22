@@ -178,13 +178,12 @@ pairs.dmc <- function(x, start=1, ...) {
 }
 
 #' @export
-preplot <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
-  end = NA, pll = TRUE, bar = FALSE, together = TRUE, only.prior = FALSE,
-  only.like = FALSE, smooth = FALSE, density = FALSE, save = FALSE,
-  p.prior = NULL, natural = TRUE, trans = NA, chain1 = TRUE, ...) {
+preplot.model <- function(object, y, hyper, xlim, start,
+  end, pll, bar, together, only.prior, only.like, smooth, density, save,
+  p.prior, natural, trans, chain1, ...) {
 
   if (hyper) {
-    phi <- attr(x, "hyper")
+    phi <- attr(object, "hyper")
     if (is.null(phi)) stop("No hyperparameters")
     if ( is.na(end) ) end <- phi$nmc
     if ( end <= start ) stop("End must be greater than start")
@@ -211,19 +210,19 @@ preplot <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
     } else {
       d <- phi.as.mcmc.list(phi, start = start, end = end)
     }
-  } else if (!is.null(x$theta)) {
+  } else if (!is.null(object$theta)) {
 
-    if ( is.na(end) ) end <- x$nmc
+    if ( is.na(end) ) end <- object$nmc
     if ( end <= start ) stop("End must be greater than start")
 
     if ( pll | bar ) {
       if (only.prior) {
-        lp <- x$summed_log_prior[start:end,]
+        lp <- object$summed_log_prior[start:end,]
       } else if (only.like) {
-        lp <- x$log_likelihoods[start:end,]
+        lp <- object$log_likelihoods[start:end,]
       } else {
-        lp <- x$summed_log_prior[start:end,] +
-          x$log_likelihoods[start:end,]
+        lp <- object$summed_log_prior[start:end,] +
+          object$log_likelihoods[start:end,]
       }
 
       colnames(lp) <- 1:dim(lp)[2]
@@ -241,11 +240,11 @@ preplot <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
         }
       }
     } else {
-      d <- mcmc.list.dmc(x, start = start, end = end)
+      d <- mcmc.list.dmc(object, start = start, end = end)
     }
-  } else if (!is.null(x[[1]]$theta)) {
+  } else if (!is.null(object[[1]]$theta)) {
     message("Plot list")
-    plot_list(x)
+    plot_list(object, start)
     d <- NULL
   } else {
     stop("Unknown class")
@@ -262,7 +261,7 @@ plot.model <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
   only.like = FALSE, smooth = FALSE, density = FALSE, save = FALSE,
   p.prior = NULL, natural = TRUE, trans = NA, chain1 = TRUE, ...) {
 
-  d <-  preplot(x, y, hyper, xlim, start, end, pll, bar, together,
+  d <-  preplot.model(x, y, hyper, xlim, start, end, pll, bar, together,
     only.prior, only.like, smooth, density, save, p.prior,
     natural, trans, chain1)
 
@@ -475,9 +474,12 @@ plot_one <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
 }
 
 #' @export
-plot_list <- function(x) {
+plot_list <- function(object, start, ...) {
+
     pdf("pll.pdf")
-    for(i in 1:length(x)) plot_one(x[[i]])
+    for(i in 1:length(object)) {
+      plot_one(object[[i]], start = start)
+    }
     dev.off()
 }
 

@@ -72,7 +72,9 @@ LogicalVector MatchPnames(List samples) {
 
   CharacterVector pnames1 = pvec.attr("names");
   CharacterVector pnames2 = pprior.attr("names");
-  for(size_t i = 0; i < pnames1.size(); i++) {
+  unsigned int npar1 = pnames1.size();
+
+  for(size_t i = 0; i < npar1; i++) {
     Rcout << "p.vector " << pnames1[i] << " p.prior" << pnames2[i] << std::endl;
   }
 
@@ -114,7 +116,9 @@ void TransformSubjects(List samples,
   arma::uvec& npdas, arma::vec& bws, arma::uvec& gpuids,
   arma::field<arma::vec>& RTs) {
 
-  for (size_t i = 0; i < samples.size(); i++) {
+  unsigned int nsub = samples.size();
+
+  for (size_t i = 0; i < nsub; i++) {
     List subjecti      = samples[i];
     List data          = subjecti["data"];  // extract data-model options
     arma::vec RT       = data["RT"];
@@ -173,7 +177,8 @@ void GetPrior(List pprior, std::vector<std::string>& dists, arma::vec& p1,
 
   std::vector<std::string> pnames = pprior.attr("names");
   List L1;
-  for (size_t i = 0; i < pprior.size(); i++) {
+  unsigned int npar = pprior.size();
+  for (size_t i = 0; i < npar; i++) {
     L1 = pprior[pnames[i]];
     std::string disti = L1.attr("dist");
     dists[i] = disti;
@@ -254,7 +259,6 @@ void CheckPnames(List samples) {
 void CheckHyperPnames(List samples) {
 
   List hyper = samples.attr("hyper");
-  unsigned int npar = hyper["n.pars"];
   CharacterVector pnames0 = hyper["p.names"];
 
   List subject0 = samples[0];

@@ -300,6 +300,39 @@ round(ps - tmp, 2)
 ```
 
 
+## How to conduct automatic convergence checks 
+One challenge in Bayesian modeling is to make sure the posterior distribuiton
+has converged.  When using the DE-MCMC sampler to fit complex models, some 
+regions in a parameter space might be difficult to handle.  Here we provide one 
+possible way to conduct automatic convergece checks and repeatedly run 
+model fit until a proper posterior distribution has reached.
+
+
+````
+
+## Convert the first stage samples to a generic object
+hsam <- hsam0
+
+## Use R repeat function to iterate
+repeat {
+  hsam <- ggdmc::run(ggdmc::init_oldhier(512, hsam, .001, thin))
+  save(hsam, hsam0, dat, dmi, p.prior, pp.prior, file = "data/tmp.rda")
+
+  converged <- matrix(NA, nrow = length(hsam), ncol = 4)
+  for(i in 1:length(hsam)) converged[i,] <- ggdmc::CheckConverged(hsam[[i]])
+  counter <- counter + 1
+  thin <- thin * 2
+  if (all(!converged) || counter > 1e2) {
+    break
+  }
+}
+
+## The last hsam would be samples from a proper posterior distribution or
+## counter reached its upper limit
+
+```
+
+
 
 ## Prerequisites
  - R (>= 3.0.0)
