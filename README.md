@@ -318,13 +318,15 @@ First, we convert the first stage samples (i.e., hsam0) to a generic object,
 hsam. Then, we use the _repeat_ function to iterate model fit. Meanwhile,
 we use _CheckConverged_ to check whether Markov chains are flat, well-mixed,
 and have enough effective samples. _flat_ is to check whether 
-premature convergence happens. _premature convergence is still less
-explored subject in fitting complex cognitive / biological (Ryan 1996).
-
+premature convergence happens. _premature_ convergence is a less
+explored subject in MCMC computations in complex cognitive / biological models.
+It has been observed in optimization works, using crossover operator 
+(Ryan 1996).
 
 ```
 
 hsam <- hsam0
+
 
 repeat {
   hsam <- ggdmc::run(ggdmc::init_oldhier(512, hsam, .001, thin))
