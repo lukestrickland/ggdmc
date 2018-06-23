@@ -9,11 +9,11 @@ samplers. A notable Gibbs example is the Python-based
 HDDM (Wiecki, Sofer & Frank, 2013), which does not allow the user to 
 conveniently set the variabilities of DDM parameters. 
 
-2. Differing from DMC (Heathcote, et al., 2018), with only DE-MCMC 
+2. Differing from DMC (Heathcote, et al., 2018), with only the DE-MCMC 
 (Turner, Sederberg, Brown, & Steyvers, 2013) sampler, _ggdmc_ provides a number 
 of different pMCMC samplers. It is up to the user to 
 decide which sampler works best for their models.  DMC may incorporate these 
-pCMCM varieties in the future.  
+pMCMC varieties in the future.  
 
 ## Getting Started
 Below is an example using the LBA Model (Brown & Heathcote, 2008). See
