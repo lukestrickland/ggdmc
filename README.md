@@ -326,7 +326,7 @@ It has been observed in optimization works, using crossover operator
 ```
 
 hsam <- hsam0
-
+counter <- 1
 
 repeat {
   hsam <- ggdmc::run(ggdmc::init_oldhier(512, hsam, .001, thin))

@@ -178,9 +178,9 @@ pairs.dmc <- function(x, start=1, ...) {
 }
 
 #' @export
-preplot.model <- function(object, y, hyper, xlim, start,
-  end, pll, bar, together, only.prior, only.like, smooth, density, save,
-  p.prior, natural, trans, chain1, ...) {
+preplot.model <- function(object, y, hyper, xlim, start, end, pll, bar,
+  together, only.prior, only.like, smooth, density, save, p.prior, natural,
+  trans, chain1, ...) {
 
   if (hyper) {
     phi <- attr(object, "hyper")
@@ -236,14 +236,15 @@ preplot.model <- function(object, y, hyper, xlim, start,
           d <- coda::mcmc.list(lapply(data.frame(lp),
             function(xx){mcmc(as.matrix(xx))}))
         } else {
-          d <- mcmc(lp) ## log-posterior likelihood
+          d <- coda::mcmc(lp) ## log-posterior likelihood
         }
       }
     } else {
       d <- mcmc.list.dmc(object, start = start, end = end)
     }
   } else if (!is.null(object[[1]]$theta)) {
-    message("Plot list")
+    message("Plot each participant separately.")
+    message("Please see pll.pdf in your working directory")
     plot_list(object, start)
     d <- NULL
   } else {
