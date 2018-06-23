@@ -21,7 +21,7 @@ the tutorials in Heathcote et al., (2018) for more. Note to be more explicit,
 the functions in _ggdmc_ usually informs the user what they are doing, such as
 _BuildModel_ below. The syntax differs slightly from DMC. Also note that the 
 sequence of parameters in a parameter vector (i.e., p.vector) must 
-strictly follow the sequence in the _p.vector_ reported by BuildModel. 
+strictly follow the sequence in the _p.vector_ reported by _BuildModel_. 
 
 ```
 require(ggdmc) 
@@ -73,7 +73,11 @@ dmi <- BindDataModel(dat, model)    ## dmi = data model instance (thanks to MG)
 ## dev.off()
 
 ## Extract the mean and variabilities of parameters across the 40 participants
-## ps <- round( attr(dat, "parameters"), 2)
+## ps <- attr(dat, "parameters")
+##
+## Please use matrixStats package, which is even faster than C functions in 
+## base package
+##
 ## round(matrixStats::colMeans2(ps), 2)
 ## round(matrixStats::colSds(ps), 2)
 ##    A  B.r1  B.r2  mean_v.f1.true  mean_v.f2.true mean_v.f1.false 
