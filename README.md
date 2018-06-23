@@ -19,7 +19,9 @@ pMCMC varieties in the future.
 Below is an example using the LBA Model (Brown & Heathcote, 2008). See
 the tutorials in Heathcote et al., (2018) for more. Note to be more explicit,
 the functions in _ggdmc_ usually informs the user what they are doing, such as
-_BuildModel_ below. The syntax differs slightly from DMC.
+_BuildModel_ below. The syntax differs slightly from DMC. Also note that the 
+sequence of parameters in a parameter vector (i.e., p.vector) must 
+strictly follow the sequence in the _p.vector_ reported by BuildModel. 
 
 ```
 require(ggdmc) 
