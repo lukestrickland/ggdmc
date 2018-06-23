@@ -344,29 +344,18 @@ repeat {
 
 ```
 
-
-
-
-
 ## Prerequisites
  - R (>= 3.0.0)
  - Rcpp (>= 0.12.10), RcppArmadillo (>= 0.7.700.0.0), ggplot2 (>= 2.1.0),
    rtdists (>= 0.6-6), gridExtra (>= 2.2-1), ggmcmc (>= 0.7.3), 
    ggthemes (>= 3.0.1), stats (>= 3.2.2), loo (>= 0.1.6), coda (>= 0.16-1)
- - Windows users need Rtools (>= 3.3.0.1959), and Microsoft Visual Studio 
-   Community (>= 2015) (for Open MPI library and M_PI macro support)
+ - Windows users need Rtools (>= 3.3.0.1959) 
  - OS X users need to install Open MPI library
  - Linux/Unix users may need to install Open MPI library, if it has not 
    been installed. 
  - [Armadillo](https://CRAN.R-project.org/package=RcppArmadillo)
    requires a recent compiler; for the g++ family at least version 4.6.*
    is required. 
-
-Successful cases for Windows OS:
-  - Microsoft Visual Studio Community 2015 (Version 14.0.25421.03 Update 3) on  
-    Windows 10 64 bits.
-  - Microsoft Visual Studio Community 2015 (Version 14.0.24720.1 Update 1), 
-    with Rtools 3.4 on Windows 10 64 bits.
 
 ## Installing
 
