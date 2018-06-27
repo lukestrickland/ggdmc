@@ -2,7 +2,7 @@
 
 The package, evolving from dynamic model of choice (_DMC_,
 Heathcote et al., 2018), is a generic tool for conducting hierarchical 
-Bayesian Computations on cognitive models.  
+Bayesian Computations in process / cognitive models.  
 
 1. Instead of using Gibbs or HMC, _ggdmc_ uses population-based MCMC (pMCMC) 
 samplers. A notable Gibbs example is the Python-based 
@@ -13,7 +13,14 @@ conveniently set the variabilities of DDM parameters.
 (Turner, Sederberg, Brown, & Steyvers, 2013) sampler, _ggdmc_ provides a number 
 of different pMCMC samplers. It is up to the user to 
 decide which sampler works best for their models.  DMC may incorporate these 
-pMCMC varieties in the future.  
+pMCMC varieties in the future.
+
+3. _ggdmc_ uses a different variant of _migration_ operator, which safeguards
+the detailed balance. It is not imperative to turn off the migration operator. 
+But one might still consider to turn it of, because it is essentially a sampler,
+similar to random-walk Metropolis, which is less efficient than the crossover
+operator.
+
 
 ## Getting Started
 Below is an example using the LBA Model (Brown & Heathcote, 2008). See
