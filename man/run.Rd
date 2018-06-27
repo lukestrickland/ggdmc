@@ -3,7 +3,6 @@
 \name{run}
 \alias{run}
 \alias{CheckConverged}
-\alias{RunTillConverged}
 \alias{StuckTests}
 \alias{FlatTests}
 \alias{MixTests}
@@ -16,10 +15,6 @@ run(samples, report = 100, ncore = 1, pm = 0, qm = 0,
   debug = FALSE)
 
 CheckConverged(samples)
-
-RunTillConverged(nmc, p.prior, data, thin, samples = NULL, report = 128,
-  ncore = 1, p.migrate = 0, gamma.mult = 2.38, force = FALSE,
-  effective.Size = 512, times = 8)
 
 StuckTests(samples, verbose = FALSE, cut = 10)
 
@@ -43,11 +38,11 @@ GetPLL(fit, pars, start, end)
 as an integer 1 to 10, forcing to resample a new parameter proposal every,
 e.g., 1, 2, 3 step.}
 
-\item{p.migrate}{set it greater than 0 to use migration samplers. For example
-p.migrate=0.05 will use migration in 5\% chance.}
-
 \item{cores}{a switch for computing the prob density for each trial in
 parallel. Turn it on by setting any number > 1.}
+
+\item{p.migrate}{set it greater than 0 to use migration samplers. For example
+p.migrate=0.05 will use migration in 5\% chance.}
 
 \item{farjump}{No funciton for compatibility reason}
 }

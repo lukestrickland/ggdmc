@@ -114,10 +114,19 @@ unstick <- function(samples, bad)
 #' @param split whether to divide one MCMC sequence into two sequences.
 #' @importFrom coda mcmc mcmc.list
 #' @export
-theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE)
+theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE,
+  subchain = FALSE)
 {
   thin   <- samples$thin
   nchain <- samples$n.chains
+
+  if (subchain) {
+    chain.idx <- sample(1:nchain, 3)
+    nchain <- 3
+  } else {
+    chain.idx <- 1:nchain
+  }
+
   if (is.na(end)) end <- samples$nmc
 
   lst <- vector(mode = "list", length = nchain * ifelse(split, 2, 1))
@@ -134,10 +143,16 @@ theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE)
     }
   }
 
-  for (i in 1:nchain) lst[[i]] <- mcmc( t(samples$theta[i, , idx[is.in]]), thin = thin)
+  for (i in 1:nchain) {
+    lst[[i]] <- mcmc( t(samples$theta[chain.idx[i], , idx[is.in]]),
+      thin = thin)
+  }
 
   if (split) {
-    for (i in 1:nchain) lst[[i+nchain]] <- mcmc( t(samples$theta[i, , idx[not.is.in]]), thin = thin)
+    for (i in 1:nchain) {
+      lst[[i+nchain]] <- mcmc( t(samples$theta[chain.idx[i], , idx[not.is.in]]),
+        thin = thin)
+    }
   }
 
   mcmc.list(lst)

@@ -2,48 +2,73 @@
 % Please edit documentation in R/ggdmc_sampling.R
 \name{StartNewsamples}
 \alias{StartNewsamples}
+\alias{RestartSamples}
+\alias{StartManynewsamples}
+\alias{RestartManysamples}
+\alias{StartNewHypersamples}
+\alias{RestartHypersamples}
 \title{Initialize New Samples}
 \usage{
 StartNewsamples(nmc, data = NULL, p.prior = NULL, thin = 1,
-  theta1 = NULL, rp = 0.001, nchain = NULL)
+  nchain = NULL, rp = 0.001)
+
+RestartSamples(nmc, samples = NULL, p.prior = NULL, thin = NULL,
+  rp = 0.001, add = FALSE)
+
+StartManynewsamples(nmc, data = NULL, p.prior = NULL, thin = 1,
+  nchain = NULL, rp = 0.001)
+
+RestartManysamples(nmc, samples = NULL, thin = NULL, rp = 0.001,
+  add = FALSE)
+
+StartNewHypersamples(nmc, data = NULL, p.prior = NULL, pp.prior = NULL,
+  thin = 1, rp = 0.001, nchain = NULL)
+
+RestartHypersamples(nmc, samples = NULL, thin = NULL, rp = 0.001,
+  add = FALSE)
 }
 \arguments{
-\item{nmc}{numbers of MCMC iterations/samples}
+\item{nmc}{numbers of Monte Carlo samples / iterations.}
 
-\item{data}{a data-model instance from \code{BindDataModel}.}
+\item{data}{a data model instance from \code{BindDataModel}.}
 
-\item{p.prior}{parameter priors}
+\item{p.prior}{parameter prior distributions from \code{BuildPrior}.}
 
 \item{thin}{thinning length.}
 
-\item{theta1}{user-supplied theta}
+\item{nchain}{numbers of Markov chains. Default is 3 times the numbers of
+model parameters.}
 
-\item{rp}{DE-MCMC tuning parameter. Default is 0.001.}
+\item{rp}{DE-MCMC tuning parameter to generate random noise either from
+uniform or Gaussian distribution.}
 
-\item{nchain}{numbers of Markov chains. Default is 3 times numbers of
-parameter.}
+\item{samples}{a collection fo posterior samples.}
 
-\item{samples}{a posterior sample. If data is not supplied, the function
-will look for \code{samples}.}
+\item{add}{add more samples onto an existing samples}
+
+\item{pp.prior}{hyper parameter prior distributions from \code{BuildPrior}.
+This must be a set of location and scale hyper prior distributions.}
 }
 \description{
-Initialize New Samples
+These functions use prior distributions, either from \code{p.prior} or joinly
+from \code{p.prior} and \code{pp.prior} in the case of hierarchical
+models to generate over-dispersed initial parameter values.
 }
 \examples{
 m1 <- BuildModel(
     p.map     = list(a="1",v="F",z="1",d="1",sz="1",sv="1", t0="1",st0="1"),
-    constants = c(st0=0,d=0),
-    match.map = list(M=list(s1="r1",s2="r2")),
-    factors   = list(S=c("s1","s2"), F=c("f1", "f2")),
+    constants = c(st0=0, d=0),
+    match.map = list(M = list(s1="r1",s2="r2")),
+    factors   = list(S = c("s1","s2"), F = c("f1", "f2")),
     responses = c("r1","r2"),
     type      = "rd")
 
-## m1 is "dmc" class
+## m1 is "model" class
 class(m1)
-## [1] "dmc"
+## [1] "model"
 
 pVec <- c(a=1, v.f1=1, v.f2=1.5, z=0.5, sz=0.25, sv=0.2,t0=.15)
-dat  <- simulate(m1, nsim=1e2, p.vector=pVec)
+dat  <- simulate(m1, nsim=1e2, ps = pVec)
 str(dat)
 ## 'data.frame':	400 obs. of  4 variables:
 ## $ S : Factor w/ 2 levels "s1","s2": 1 1 1 1 1 1 1 1 1 1 ...
@@ -51,27 +76,71 @@ str(dat)
 ## $ R : Factor w/ 2 levels "r1","r2": 1 1 1 2 1 1 1 1 2 1 ...
 ## $ RT: num  0.26 0.255 0.572 0.25 0.518 ...
 
-## mdi1 is dmc as well as data.frame class
-mdi1 <- BindDataModel(dat, m1)
+dmi1 <- BindDataModel(dat, m1)
+npar <- length(GetPNames(m1))
 
-p.prior <- prior.p.dmc(
-   dists = rep("tnorm", 7),
+p.prior <- BuildPrior(
+   dists = rep("tnorm", npar),
    p1    = c(a=2,  v.f1=2.5, v.f2=1.25, z=.5, sz=.3, sv=1,  t0=.3),
    p2    = c(a=.5, v.f1=.5,  v.f2=.35,  z=.1, sz=.1, sv=.3, t0=.05),
    lower = c(0,-5, -5, 0, 0, 0, 0),
    upper = c(5, 7,  7, 2, 2, 2, 2))
 
-## Set up a new DMC sample with 200 iteration. The default thinning length
-## is 1
-samples0 <- samples(nmc=50, p.prior=p.prior, data=mdi1)
+## Set up a new DMC sample with 16 iteration. The default thin is 1
+samples0 <- StartNewsamples(nmc = 16, data=dmi1, p.prior=p.prior)
 samples0$nmc
-## [1] 50
+## [1] 16
 
-## Run a fixed-effect model with 5\% chance of using migration sampler
-## samples0 <- run(samples0, p.migrate=.05)
+samples1 <- RestartSamples(16, samples0, p.prior)
+samples1$nmc
+## [1] 16
+samples2 <- RestartSamples(16, samples0, p.prior, add = TRUE)
+samples2$nmc
+## [1] 32
 
-## Add 200 more iteration on to sample0
-samples1 <- samples(nmc=50, p.prior=p.prior, samples=samples0, add=TRUE)
-## samples1$nmc
-## [1] 100
+#######################
+## Hierarchical      ##
+#######################
+pop.mean  <- c(a=1.25, v.f1=4,  v.f2=3,  z=.5, sz=.3, sv=2,  t0=.3)
+pop.scale <- c(a=.5,   v.f1=.5, v.f2=.5, z=.1, sz=.1, sv=.3, t0=.05)
+pop.prior <- BuildPrior(
+  dists = rep("tnorm", npar),
+  p1    = pop.mean,
+  p2    = pop.scale,
+  lower = c(0,  -5, -5, 0, 0, 0, 0),
+  upper = c(5,   7,  7, 2, 2, 2, 2))
+
+nsubject <- 10
+ntrial <- 1e2
+## You may have errors here, informing you that DDM parameters are invalid.
+## That is from MG's rtdists. Simply re-run simulate several times or alter
+## pop.prior
+dat <- simulate(m1, nsim = ntrial, nsub = nsubject, p.prior = pop.prior)
+dmi2 <- BindDataModel(dat, m1)
+ps <- attr(dat, "parameters")
+p.prior <- BuildPrior(
+   dists = rep("tnorm", npar),
+   p1    = pop.mean,
+   p2    = pop.scale*5,
+   lower = c(0, -5, -5, 0, 0, 0, 0),
+   upper = c(5,  7,  7, 2, 2, 2, 2))
+mu.prior <- BuildPrior(
+   dists = rep("tnorm", npar),
+   p1    = pop.mean,
+   p2    = pop.scale*5,
+   lower = c(0, -5, -5, 0, 0, 0, 0),
+   upper = c(5,  7,  7, 2, 2, 2, 2))
+sigma.prior <- BuildPrior(
+   dists = rep("beta", npar),
+   p1    = rep(1, npar),
+   p2    = rep(1, npar),
+   upper = rep(2, npar))
+names(sigma.prior) <- GetPNames(m1)
+pp.prior <- list(mu.prior, sigma.prior)
+
+thin <- 2
+nchain <- npar * 3
+hsam0 <- StartNewHypersamples(32, dmi2, p.prior, pp.prior, thin, 001, nchain)
+## hsam0 <- run(hsam0)
+
 }

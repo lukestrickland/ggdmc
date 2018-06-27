@@ -1,24 +1,24 @@
 Package: ggdmc
 Type: Package
-Title: Dynamic Models of Choice with Better Graphic Tools and Quicker
-Version: 0.2.0.0
-Date: 2018-05-15
+Title: Quicker Dynamic Models of Choice with Better Graphic Tools
+Version: 0.2.0.5
+Date: 2018-06-25
 Author: Yi-Shin Lin [aut, cre], Andrew Heathcote [aut]
 Maintainer: Yi-Shin Lin <yishin.lin@utas.edu.au>
 Description: Hierarchical Bayeisan modeling in cognitive models. This is
-  a generic tool for conducting Bayesian Computations on cognitive models, 
-  using the samplers based on genetic Monte Carlo algorithms. The user is given
-  convenient interfaces to construct her/his experimental design.   
+  a generic tool for conducting Bayesian Computations for various factorial 
+  designs in cognitive models. The package uses the population-based 
+  genetic samplers to conduct Markov Chain Monte Carlo computations. 
 License: GPL-2
 URL: https://github.com/TasCL/ggdmc
 BugReports: https://github.com/TasCL/ggdmc/issues
 LazyData: TRUE
-Depends: R (>= 3.3.3)
+Depends: R (>= 3.0.0)
 Imports: Rcpp (>= 0.12.10), ggplot2 (>= 2.1.0), coda, rtdists,
-        gridExtra (>= 2.2-1), ggmcmc (>= 0.7.3), ggthemes, stats, 
+        gridExtra (>= 2.2-1), ggmcmc (>= 0.7.3), stats, 
         loo (>= 0.1.6), data.table (>= 1.10.4)
 LinkingTo: Rcpp (>= 0.12.10), RcppArmadillo (>= 0.7.100.3.0), BH
 RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2018-05-16 04:08:20 UTC; yslin
+Packaged: 2018-06-25 11:19:00 UTC; yslin
 Repository: CRAN

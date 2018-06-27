@@ -4,7 +4,8 @@
 \alias{run_many}
 \title{Fit a Bayesian Model to multiple Participants}
 \usage{
-run_many(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler)
+run_many(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler,
+  debug)
 }
 \arguments{
 \item{samples}{a initialized samples list. Each element should contain

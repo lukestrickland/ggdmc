@@ -4,7 +4,8 @@
 \alias{run_one}
 \title{Fit a Bayesian Model to a Single Participant}
 \usage{
-run_one(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler)
+run_one(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler,
+  debug)
 }
 \arguments{
 \item{samples}{a initialized sample}

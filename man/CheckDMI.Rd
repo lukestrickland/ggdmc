@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggdmc_sampling.R
 \name{CheckDMI}
 \alias{CheckDMI}
-\title{Check Data-Model Instance}
+\title{Check Data Model Instance}
 \usage{
 CheckDMI(data = NULL, p.prior = NULL, theta1 = NULL, nchain = NULL)
 }
@@ -16,8 +16,8 @@ CheckDMI(data = NULL, p.prior = NULL, theta1 = NULL, nchain = NULL)
 \item{nchain}{number of MCMC chains}
 }
 \description{
-Return a model object extracted from either a data-model instance (DMI) or
-a 'samples' object. Before that check through (1) in the case of a single
+Return a model object extracted either from a data model instance or
+a 'samples' object. The function checks also (1) in the case of a single
 subject, whether DMI is a \code{data.frame}; (2) in the case of 'samples',
 whether samples is a list of many subjects; (3) whether model is
 successfully created; and (4) whether p.prior is suppled or we can extract

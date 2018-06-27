@@ -146,6 +146,7 @@ void TransformSubjects(List samples,
     unsigned int start   = subjecti["start"];        // R index
     unsigned int start_C = start - 1;
     store_i(i) = start - 1;
+    // Rcout << "store_i: " << store_i(i) << std::endl;
 
     types[i] = type;
     allpars(i) = allpar;

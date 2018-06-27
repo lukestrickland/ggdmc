@@ -306,6 +306,98 @@ round(ps - tmp, 2)
 
 ```
 
+## How to fit fixed-effect model with multiple particpants
+
+
+```
+rm(list = ls())
+setwd("~/Documents/ggdmc/tests/testthat/")
+require(ggdmc)
+
+## Model Setup----------
+model <- BuildModel(p.map = list( A = "1", B = "R", t0 = "1",
+   mean_v = c("F", "M"), sd_v = "M", st0 = "1"),
+   match.map = list(M = list(s1 = 1, s2 = 2)),
+   factors = list(S = c("s1", "s2"), F = c("f1", "f2")),
+   constants = c(sd_v.false = 1, st0 = 0),
+   responses = c("r1", "r2"),
+   type = "norm")
+npar <- length(GetPNames(model))
+
+## Population distribution, rate effect on F
+pop.mean <- c(A=.4, B.r1=.6, B.r2=.8, t0=.3, mean_v.f1.true=1.5,
+  mean_v.f2.true=1, mean_v.f1.false=0, mean_v.f2.false=0, sd_v.true = .25)
+pop.scale <-c(A=.1, B.r1=.1, B.r2=.1, t0=.05, mean_v.f1.true=.2,
+  mean_v.f2.true=.2, mean_v.f1.false=.2, mean_v.f2.false=.2, sd_v.true = .1)
+pop.prior <- BuildPrior(
+  dists = rep("tnorm", npar),
+  p1    = pop.mean,
+  p2    = pop.scale,
+  lower = c(0,0,0,NA,NA,NA,NA,0,.1),
+  upper = c(NA,NA,NA,NA,NA,NA,NA,NA,1))
+
+## Simulate some data
+nsubject <- 8
+ntrial <- 1e2
+dat <- simulate(model, nsim = ntrial, nsub = nsubject, p.prior = pop.prior)
+dmi <- BindDataModel(dat, model)
+ps  <- attr(dat, "parameters")
+
+# round( matrixStats::colMeans2(ps), 2)
+# round( matrixStats::colSds(ps), 2)
+
+## FIT FIXED-EFFECT MODEL----------
+## Use all truncated normal priors for locations
+p.prior <- BuildPrior(
+  dists = rep("tnorm", npar),
+  p1    = pop.mean,
+  p2    = pop.scale*5,
+  lower = c(0,0,0,NA,NA,NA,NA,0,.1),
+  upper = c(NA,NA,NA,NA,NA,NA,NA,NA,NA))
+
+thin <- 8
+nchain <- npar * 3
+migrationRate <- .2
+sam <- run(StartManynewsamples(512, dmi, p.prior, thin, nchain),
+  pm = migrationRate, ncore = 8)
+sam <- run(RestartManysamples(512, sam), pm = migrationRate, ncore = 8)
+sam <- run(RestartManysamples(512, sam, thin = 16), pm = migrationRate, ncore = 8)
+sam <- run(RestartManysamples(512, sam, thin = 64), pm = migrationRate, ncore = 8)
+sam <- run(RestartManysamples(512, sam, thin = 16), pm = migrationRate, ncore = 8)
+
+plot(sam[[6]])
+plot(sam)
+
+## a pMCMC specific check (under development)
+plot_subchain(sam[[1]], nchain = 2)
+plot_subchain(sam[[1]], nchain = 3)
+plot_subchain(sam[[1]], nchain = 4)
+
+for(i in 1:length(sam)) {
+  print(CheckConverged(sam[[i]]))
+  tmp1 <- CheckRecovery(sam[[i]], ps[i,])
+}
+
+
+tmp2 <- ggdmc::gelman.diag.dmc(sam)
+tmp3 <- ggdmc::theta.as.mcmc.list(sam[[1]], start=1, end=sam[[1]]$nmc,
+  subchain = TRUE)
+coda::gelman.diag(tmp3, autoburnin=TRUE, transform=FALSE)
+
+est <- summary(sam)
+round(colMeans(ps), 2)
+#    A            B.r1            B.r2              t0  mean_v.f1.true
+# 0.44            0.60            0.74            0.28            1.49
+# mean_v.f2.true    mean_v.f1.false mean_v.f2.false       sd_v.true
+# 0.99                         0.04            0.18            0.30
+
+save(dat, dmi, p.prior, model, sam, ntrial, npar, ps, file = "LBA_MSDMC.rda")
+
+
+
+```
+
+
 
 ## How to conduct automatic convergence checks 
 One challenge in Bayesian modeling is to make sure the posterior distribuiton

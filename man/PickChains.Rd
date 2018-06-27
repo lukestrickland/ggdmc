@@ -3,11 +3,14 @@
 \name{PickChains}
 \alias{PickChains}
 \alias{GetSubchains}
+\alias{SelectEmigrants}
 \title{Draw n other chains and shuffle them}
 \usage{
 PickChains(k, n, chains)
 
 GetSubchains(nchain)
+
+SelectEmigrants(ngroup, k)
 }
 \arguments{
 \item{k}{the kth processed chain. Must be an integer within the range of 0
@@ -25,8 +28,8 @@ a column vector
 \description{
 This is part of DE-MCMC algorithm. \code{PickChains} draws \code{n}
 chains out of \code{length(chains)} chains, excluding the kth chain.
-\code{GetSubchains} is used in \code{migration} sampler. It draws a subset of
-chains in \code{nchain} chains.
+\code{GetSubchains} is used in \code{migration} operator. It draws a subset
+of chains in \code{nchain} chains.
 }
 \examples{
 chains <- 0:23

@@ -5,7 +5,8 @@
 \alias{phi.as.mcmc.list}
 \title{Convert Theta to a mcmc List}
 \usage{
-theta.as.mcmc.list(samples, start = 1, end = NA, split = FALSE)
+theta.as.mcmc.list(samples, start = 1, end = NA, split = FALSE,
+  subchain = FALSE)
 
 phi.as.mcmc.list(hyper, start = 1, end = NA, split = FALSE, thin = 1)
 }

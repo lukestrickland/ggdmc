@@ -1404,8 +1404,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_dmc
-List run_dmc(List samples, arma::uvec force, unsigned int report, double pm, double gammamult, unsigned int ncore);
-RcppExport SEXP _ggdmc_run_dmc(SEXP samplesSEXP, SEXP forceSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP gammamultSEXP, SEXP ncoreSEXP) {
+List run_dmc(List samples, arma::uvec force, unsigned int report, double pm, double gammamult, unsigned int ncore, bool debug);
+RcppExport SEXP _ggdmc_run_dmc(SEXP samplesSEXP, SEXP forceSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP gammamultSEXP, SEXP ncoreSEXP, SEXP debugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1415,7 +1415,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type pm(pmSEXP);
     Rcpp::traits::input_parameter< double >::type gammamult(gammamultSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_dmc(samples, force, report, pm, gammamult, ncore));
+    Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_dmc(samples, force, report, pm, gammamult, ncore, debug));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1436,20 +1437,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_hyper_dgmc
-List run_hyper_dgmc(List samples, arma::uvec force, unsigned int report, double pm, double qm, double gammamult, unsigned int ncore, unsigned int ngroup);
-RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP forceSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP qmSEXP, SEXP gammamultSEXP, SEXP ncoreSEXP, SEXP ngroupSEXP) {
+List run_hyper_dgmc(List samples, unsigned int report, double pm, double qm, double gammamult, unsigned int ngroup, unsigned int ncore);
+RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP qmSEXP, SEXP gammamultSEXP, SEXP ngroupSEXP, SEXP ncoreSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type samples(samplesSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type force(forceSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type report(reportSEXP);
     Rcpp::traits::input_parameter< double >::type pm(pmSEXP);
     Rcpp::traits::input_parameter< double >::type qm(qmSEXP);
     Rcpp::traits::input_parameter< double >::type gammamult(gammamultSEXP);
-    Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ngroup(ngroupSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, force, report, pm, qm, gammamult, ncore, ngroup));
+    Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, report, pm, qm, gammamult, ngroup, ncore));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1655,9 +1655,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_GetSubchains", (DL_FUNC) &_ggdmc_GetSubchains, 1},
     {"_ggdmc_SelectEmigrants", (DL_FUNC) &_ggdmc_SelectEmigrants, 2},
     {"_ggdmc_run_dgmc", (DL_FUNC) &_ggdmc_run_dgmc, 8},
-    {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 6},
+    {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 7},
     {"_ggdmc_run_hyper_dmc", (DL_FUNC) &_ggdmc_run_hyper_dmc, 6},
-    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 8},
+    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 7},
     {"_ggdmc_rtn_scalar", (DL_FUNC) &_ggdmc_rtn_scalar, 4},
     {"_ggdmc_dtnorm", (DL_FUNC) &_ggdmc_dtnorm, 6},
     {"_ggdmc_rtnorm", (DL_FUNC) &_ggdmc_rtnorm, 5},

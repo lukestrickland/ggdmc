@@ -769,8 +769,8 @@ GetGamma <- function(npar, gammamult = 2.38, hyper = FALSE) {
 #'
 #' This is part of DE-MCMC algorithm. \code{PickChains} draws \code{n}
 #' chains out of \code{length(chains)} chains, excluding the kth chain.
-#' \code{GetSubchains} is used in \code{migration} sampler. It draws a subset of
-#' chains in \code{nchain} chains.
+#' \code{GetSubchains} is used in \code{migration} operator. It draws a subset
+#' of chains in \code{nchain} chains.
 #'
 #' @param k the kth processed chain. Must be an integer within the range of 0
 #' to \code{nchain - 1}. No check for errorly using R index.
@@ -832,6 +832,7 @@ GetSubchains <- function(nchain) {
     .Call('_ggdmc_GetSubchains', PACKAGE = 'ggdmc', nchain)
 }
 
+#' @rdname PickChains
 #' @export
 SelectEmigrants <- function(ngroup, k) {
     .Call('_ggdmc_SelectEmigrants', PACKAGE = 'ggdmc', ngroup, k)
@@ -843,8 +844,8 @@ run_dgmc <- function(samples, force, report, pm, qm, gammamult, ncore, ngroup) {
 }
 
 #' @export
-run_dmc <- function(samples, force, report, pm, gammamult, ncore) {
-    .Call('_ggdmc_run_dmc', PACKAGE = 'ggdmc', samples, force, report, pm, gammamult, ncore)
+run_dmc <- function(samples, force, report, pm, gammamult, ncore, debug = FALSE) {
+    .Call('_ggdmc_run_dmc', PACKAGE = 'ggdmc', samples, force, report, pm, gammamult, ncore, debug)
 }
 
 #' @export
@@ -853,8 +854,8 @@ run_hyper_dmc <- function(samples, report, pm, gammamult, ncore, debug) {
 }
 
 #' @export
-run_hyper_dgmc <- function(samples, force, report, pm, qm, gammamult, ncore, ngroup) {
-    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, force, report, pm, qm, gammamult, ncore, ngroup)
+run_hyper_dgmc <- function(samples, report, pm, qm, gammamult, ngroup, ncore) {
+    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, report, pm, qm, gammamult, ngroup, ncore)
 }
 
 rtn_scalar <- function(mean, sd, l, u) {

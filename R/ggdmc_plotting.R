@@ -484,6 +484,33 @@ plot_list <- function(object, start, ...) {
     dev.off()
 }
 
+#' @import ggplot2
+#' @importFrom graphics plot
+#' @export
+plot_subchain <- function(x, nchain, hyper = FALSE, xlim = NA, start = 1,
+  end = NA) {
+
+  if ( is.na(end) ) end <- x$nmc
+  if ( end <= start ) stop("End must be greater than start")
+  if (x$n.chain < nchain) stop("nchain is too large")
+
+  idx <- sample(1:x$n.chains, nchain)
+  lp <- x$summed_log_prior[1:end,idx] + x$log_likelihoods[1:end,idx]
+  d <- coda::mcmc.list(lapply(data.frame(lp), function(xx){coda::mcmc(as.matrix(xx))}))
+  DT <- ggmcmc::ggs(d)
+  DT$Chain <- factor(DT$Chain)
+  levels(DT$Chain)
+
+  DT$Parameter <- "lp"
+  f2 <- ggplot(DT) +
+    geom_line(aes(x = Iteration, y = value, color = Chain)) +
+    ylab("Log-posterior likelihood") +
+    theme_minimal() +
+    theme(legend.position = "none")
+  print(f2)
+  return(invisible(DT))
+}
+
 
 #' Plot DMC Samples
 #'
@@ -525,7 +552,6 @@ plot_list <- function(object, start, ...) {
 #' @import ggplot2
 #' @importFrom coda mcmc mcmc.list
 #' @importFrom ggmcmc ggs ggs_density ggs_traceplot
-#' @importFrom ggthemes theme_fivethirtyeight theme_wsj
 #' @importFrom gridExtra grid.arrange
 #' @importFrom graphics barplot
 #' @examples
