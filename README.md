@@ -16,10 +16,10 @@ decide which sampler works best for their models.  DMC may incorporate these
 pMCMC varieties in the future.
 
 3. _ggdmc_ uses a different variant of _migration_ operator, which safeguards
-the detailed balance. It is not imperative to turn off the migration operator. 
-But one might still consider to turn it of, because it is essentially a sampler,
-similar to random-walk Metropolis, which is less efficient than the crossover
-operator.
+the detailed balance. It is not imperative to turn off the _migration_ operator. 
+But one might still consider to turn it off, because it is essentially a 
+sampler, similar to random-walk Metropolis, which is less efficient than the 
+_crossover_ operator.
 
 
 ## Getting Started
