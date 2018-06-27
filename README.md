@@ -306,7 +306,7 @@ round(ps - tmp, 2)
 
 ```
 
-## How to fit fixed-effect model with multiple particpants
+## How to fit fixed-effect model with multiple participants
 
 
 ```
