@@ -1363,13 +1363,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // GetSubchains
-arma::uvec GetSubchains(unsigned int nchain);
-RcppExport SEXP _ggdmc_GetSubchains(SEXP nchainSEXP) {
+arma::uvec GetSubchains(unsigned int nchain, bool debug);
+RcppExport SEXP _ggdmc_GetSubchains(SEXP nchainSEXP, SEXP debugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< unsigned int >::type nchain(nchainSEXP);
-    rcpp_result_gen = Rcpp::wrap(GetSubchains(nchain));
+    Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
+    rcpp_result_gen = Rcpp::wrap(GetSubchains(nchain, debug));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1652,7 +1653,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_rprior_vec", (DL_FUNC) &_ggdmc_rprior_vec, 5},
     {"_ggdmc_GetGamma", (DL_FUNC) &_ggdmc_GetGamma, 3},
     {"_ggdmc_PickChains", (DL_FUNC) &_ggdmc_PickChains, 3},
-    {"_ggdmc_GetSubchains", (DL_FUNC) &_ggdmc_GetSubchains, 1},
+    {"_ggdmc_GetSubchains", (DL_FUNC) &_ggdmc_GetSubchains, 2},
     {"_ggdmc_SelectEmigrants", (DL_FUNC) &_ggdmc_SelectEmigrants, 2},
     {"_ggdmc_run_dgmc", (DL_FUNC) &_ggdmc_run_dgmc, 8},
     {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 7},

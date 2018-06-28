@@ -495,7 +495,7 @@ plot_subchain <- function(x, nchain, hyper = FALSE, xlim = NA, start = 1,
   if (x$n.chain < nchain) stop("nchain is too large")
 
   idx <- sample(1:x$n.chains, nchain)
-  lp <- x$summed_log_prior[1:end,idx] + x$log_likelihoods[1:end,idx]
+  lp <- x$summed_log_prior[start:end,idx] + x$log_likelihoods[start:end,idx]
   d <- coda::mcmc.list(lapply(data.frame(lp), function(xx){coda::mcmc(as.matrix(xx))}))
   DT <- ggmcmc::ggs(d)
   DT$Chain <- factor(DT$Chain)

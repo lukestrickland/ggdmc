@@ -828,8 +828,8 @@ PickChains <- function(k, n, chains) {
 
 #' @rdname PickChains
 #' @export
-GetSubchains <- function(nchain) {
-    .Call('_ggdmc_GetSubchains', PACKAGE = 'ggdmc', nchain)
+GetSubchains <- function(nchain, debug = FALSE) {
+    .Call('_ggdmc_GetSubchains', PACKAGE = 'ggdmc', nchain, debug)
 }
 
 #' @rdname PickChains

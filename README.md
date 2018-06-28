@@ -94,7 +94,7 @@ dmi <- BindDataModel(dat, model)    ## dmi = data model instance (thanks to MG)
 ##            0.34       0.36   0.23
 ##            0.16       0.18   0.10
            
-## FIT HDDM
+## FIT hierarchical model
 p.prior <- BuildPrior(
   dists = rep("tnorm", 9),
   p1    = pop.mean,
@@ -414,7 +414,7 @@ possible way to conduct automatic convergece checks and repeatedly run
 model fit until a proper posterior distribution has reached.
 
 First, we convert the first stage samples (i.e., hsam0) to a generic object, 
-hsam. Then, we use the _repeat_ function to iterate model fit. Meanwhile,
+hsam. Then, we use the _repeat_ function to iterate model fits. Meanwhile,
 we use _CheckConverged_ to check whether Markov chains are flat, well-mixed,
 and have enough effective samples. _flat_ is to check whether 
 premature convergence happens. _premature_ convergence is a less
