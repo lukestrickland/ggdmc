@@ -19,7 +19,8 @@ pMCMC varieties in the future.
 the detailed balance. It is not imperative to turn off the _migration_ operator. 
 But one might still consider to turn it off, because it is essentially a 
 sampler, similar to random-walk Metropolis, which is less efficient than the 
-_crossover_ operator.
+_crossover_ operator. Mostly, pMCMC is efficient when a combination of 
+operatoers is applied together. 
 
 
 ## Getting Started
