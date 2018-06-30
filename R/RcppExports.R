@@ -849,8 +849,8 @@ run_dmc <- function(samples, force, report, pm, gammamult, ncore, debug = FALSE)
 }
 
 #' @export
-run_hyper_dmc <- function(samples, report, pm, gammamult, ncore, debug) {
-    .Call('_ggdmc_run_hyper_dmc', PACKAGE = 'ggdmc', samples, report, pm, gammamult, ncore, debug)
+run_hyper_dmc <- function(samples, report, pm, hpm, gammamult, ncore, debug) {
+    .Call('_ggdmc_run_hyper_dmc', PACKAGE = 'ggdmc', samples, report, pm, hpm, gammamult, ncore, debug)
 }
 
 #' @export

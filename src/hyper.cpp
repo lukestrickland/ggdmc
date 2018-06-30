@@ -123,6 +123,7 @@ double sumloghprior(arma::vec location, arma::vec scale,
   arma::vec lp1, arma::vec sp1, arma::vec lp2, arma::vec sp2, arma::vec llower,
   arma::vec slower, arma::vec lupper, arma::vec supper, arma::uvec llog,
   arma::uvec slog) {
+
   return sumlogprior(location, ldists, lp1, lp2, llower, lupper, llog) +
   sumlogprior(scale, sdists, sp1, sp2, slower, supper, slog);
 }

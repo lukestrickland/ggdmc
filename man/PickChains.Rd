@@ -8,7 +8,7 @@
 \usage{
 PickChains(k, n, chains)
 
-GetSubchains(nchain)
+GetSubchains(nchain, debug = FALSE)
 
 SelectEmigrants(ngroup, k)
 }

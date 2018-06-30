@@ -230,6 +230,7 @@ double sumlogprior(arma::vec pvec, std::vector<std::string> dists,
   arma::uvec islog) {
 
   arma::vec den = dprior_(pvec, dists, p1, p2, lower, upper, islog);
+  // den.replace(arma::datum::inf, 1e-10);  // replace each INFINITY with 1e-10
   double out = arma::accu(den);
   if (std::isnan(out)) out = -INFINITY;
   return out;

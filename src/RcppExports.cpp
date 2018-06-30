@@ -1422,18 +1422,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_hyper_dmc
-List run_hyper_dmc(List samples, unsigned int report, double pm, double gammamult, unsigned int ncore, bool debug);
-RcppExport SEXP _ggdmc_run_hyper_dmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP gammamultSEXP, SEXP ncoreSEXP, SEXP debugSEXP) {
+List run_hyper_dmc(List samples, unsigned int report, double pm, double hpm, double gammamult, unsigned int ncore, bool debug);
+RcppExport SEXP _ggdmc_run_hyper_dmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP hpmSEXP, SEXP gammamultSEXP, SEXP ncoreSEXP, SEXP debugSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type samples(samplesSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type report(reportSEXP);
     Rcpp::traits::input_parameter< double >::type pm(pmSEXP);
+    Rcpp::traits::input_parameter< double >::type hpm(hpmSEXP);
     Rcpp::traits::input_parameter< double >::type gammamult(gammamultSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
     Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_hyper_dmc(samples, report, pm, gammamult, ncore, debug));
+    rcpp_result_gen = Rcpp::wrap(run_hyper_dmc(samples, report, pm, hpm, gammamult, ncore, debug));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1657,7 +1658,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_SelectEmigrants", (DL_FUNC) &_ggdmc_SelectEmigrants, 2},
     {"_ggdmc_run_dgmc", (DL_FUNC) &_ggdmc_run_dgmc, 8},
     {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 7},
-    {"_ggdmc_run_hyper_dmc", (DL_FUNC) &_ggdmc_run_hyper_dmc, 6},
+    {"_ggdmc_run_hyper_dmc", (DL_FUNC) &_ggdmc_run_hyper_dmc, 7},
     {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 7},
     {"_ggdmc_rtn_scalar", (DL_FUNC) &_ggdmc_rtn_scalar, 4},
     {"_ggdmc_dtnorm", (DL_FUNC) &_ggdmc_dtnorm, 6},

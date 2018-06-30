@@ -3,6 +3,9 @@
 \name{run}
 \alias{run}
 \alias{CheckConverged}
+\alias{run_unstuck}
+\alias{run_converge}
+\alias{run_manyunstuck}
 \alias{StuckTests}
 \alias{FlatTests}
 \alias{MixTests}
@@ -10,11 +13,25 @@
 \alias{GetPLL}
 \title{Fit a fixed-effect or hierarchical Bayesian models}
 \usage{
-run(samples, report = 100, ncore = 1, pm = 0, qm = 0,
+run(samples, report = 100, ncore = 1, pm = 0, qm = 0, hpm = 0,
   gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
   debug = FALSE)
 
 CheckConverged(samples)
+
+run_unstuck(samples, nmc = NA, report = 100, cut = 10, nbad = 0,
+  max.try = 100, pm = 0, qm = 0, gammamult = 2.38, verbose = FALSE,
+  end.no.migrate = FALSE, sampler = "DE-MCMC", debug = FALSE)
+
+run_converge(samples, nmc, report = 100, gammamult = 2.38, cut = 1.1,
+  max.try = 100, minN = NA, meanN = NA, transform = TRUE,
+  autoburnin = FALSE, split = TRUE, verbose = FALSE,
+  sampler = "DE-MCMC", debug = FALSE)
+
+run_manyunstuck(samples, nmc = NA, report = 100, ncore = 1, cut = 10,
+  nbad = 0, max.try = 20, pm = 0, qm = 0, gammamult = 2.38,
+  verbose = TRUE, end.no.migrate = FALSE, sampler = "DE-MCMC",
+  debug = FALSE)
 
 StuckTests(samples, verbose = FALSE, cut = 10)
 
@@ -56,4 +73,9 @@ crossover (i.e., DE-MC), mutation, or migration operators. Note that
 the latter two operators essentially are random-walk Metroplolis, so they
 will be very inefficient, if been applied alone, even with our fast C++
 implementation.
+}
+\examples{
+###############
+## Run examples
+###############
 }

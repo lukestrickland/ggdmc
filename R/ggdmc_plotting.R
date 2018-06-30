@@ -354,6 +354,7 @@ plot.model <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
 
 }
 
+
 #' @export
 #' @importFrom ggmcmc ggs
 plot_one <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
@@ -417,7 +418,7 @@ plot_one <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
   } else if (density) {
     ## cat("When density is TRUE, plotting prior density is disable.")
     f2 <- ggs_density(DT) +
-      ylab("Density")+ theme_wsj()+
+      ylab("Density")+ theme_minimal() +
       theme(legend.position="none")
 
     if (!pll.together) { f2 <- f2 + facet_wrap(Chain~Parameter) +
@@ -456,10 +457,12 @@ plot_one <- function(x, y = NULL, hyper = FALSE, xlim = NA, start = 1,
     if (chain1) {
       DT1 <- DT[DT$Chain==1,]
       attr(DT1, "nChains") <- attr(DT, "nChains")
-      f2 <- ggs_density(DT1) + ylab("Density")+ theme_wsj() +
+      f2 <- ggs_density(DT1) + ylab("Density")+
+        theme_minimal() +
         geom_line(aes(x, y), df1)
     } else {
-      f2 <- ggs_density(DT) + ylab("Density")+ theme_wsj() +
+      f2 <- ggs_density(DT) + ylab("Density")+
+        theme_minimal() +
         geom_line(aes(x, y), df1)
     }
 

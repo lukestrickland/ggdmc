@@ -124,7 +124,11 @@ CheckHyperDMI <- function(data = NULL, nchain = NULL) {
   if (is.data.frame(data)) stop("data is a list with each if its elements is data.frame")
   model1 <- attr(data[[1]], "model")
   pnames <- GetPNames(model1)
-  if (is.null(nchain)) nchain <- length(pnames)
+  if (is.null(nchain)) {
+    nchain <- 3*length(pnames)
+    message("nchain is not supplied. Use default ", nchain, " chains")
+    message("If you are using DGMC, this nchain may be inappropriate.")
+  }
   return(nchain)
 }
 
@@ -265,11 +269,11 @@ StartNewsamples <- function(nmc, data = NULL, p.prior = NULL, thin = 1,
 
 ##' @rdname StartNewsamples
 ##' @export
-RestartSamples <- function(nmc, samples = NULL, p.prior = NULL, thin = NULL,
-  rp = .001, add = FALSE) {
+RestartSamples <- function(nmc, samples = NULL, thin = NULL, rp = .001,
+  add = FALSE) {
 
-  model <- CheckSamples(samples, p.prior, NULL)
-  npar  <- length(GetPNames(model))
+  # model <- CheckSamples(samples, p.prior, NULL)
+  # npar  <- length(GetPNames(model))
   if (is.null(samples)) stop("Use StartNewsamples")
   if (is.null(thin)) thin <- samples$thin
 
@@ -391,9 +395,10 @@ RestartHypersamples <- function(nmc, samples = NULL, thin = NULL, rp = .001,
 ##' @param sampler a string indicating to use which sampler
 ##' @return Bayesian samples
 ##' @export
-run_one <- function(samples, report, ncore, pm, qm, gammamult, ngroup, force,
+run_one <- function(samples, report, pm, qm, gammamult, ngroup, force,
   sampler, debug) {
 
+  ncore <- 1
   force  <- MakeForce(samples, force)
   pnames <- GetPNames(attr(samples$data, "model"))
 
@@ -519,8 +524,11 @@ run_many <- function(samples, report, ncore, pm, qm, gammamult, ngroup,
 #' e.g., 1, 2, 3 step.
 #' @return a DMC sample with class c("list", "dmc")
 #' @examples
+#' ###############
+#' ## Run examples
+#' ###############
 #' @export
-run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
+run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0, hpm = 0,
   gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
   debug = FALSE) {
   ## passing debug == TRUE to launch old migration operator
@@ -538,7 +546,7 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
 
     if (sampler == "DE-MCMC") {
       message("Run Hierarchical DE-MCMC")
-      out <- run_hyper_dmc(samples, report, pm, gamma.mult, ncore, debug)
+      out <- run_hyper_dmc(samples, report, pm, hpm, gamma.mult, ncore, debug)
     } else if (sampler == "DGMC") {
       message("Run Hierarchical DGMC")
       out <- run_hyper_dgmc(samples, report, pm, qm, gamma.mult, ngroup, ncore)
@@ -562,7 +570,7 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
     }
 
   } else if (any(names(samples) == "theta")) { ## One subject
-    out <- run_one(samples, report, ncore, pm, qm, gamma.mult, ngroup, force,
+    out <- run_one(samples, report, pm, qm, gamma.mult, ngroup, force,
       sampler, debug)
     pnames <- GetPNames(attr(out$data, "model"))
     dimnames(out$theta) <- list(NULL, pnames, NULL)
@@ -583,8 +591,8 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0,
 }
 
 
-#' @rdname run
-#' @export
+##' @rdname run
+##' @export
 CheckConverged <- function(samples) {
   stuck <- ggdmc::StuckTests(samples, verbose = FALSE, cut = 10)
   flat  <- ggdmc::FlatTests(samples, p1 = 1/3, p2 = 1/3,
@@ -597,6 +605,184 @@ CheckConverged <- function(samples) {
   out <- c(isstuck, flat, mix, size)
   names(out) <- c("Stuck", "Flat", "Mix", "ES")
   return(out)
+}
+
+
+##' @rdname run
+##' @export
+run_unstuck <- function(samples, nmc=NA, report=1e2,
+  cut=10, nbad=0, max.try=100, pm=0, qm = 0, gammamult=2.38, verbose=FALSE,
+  end.no.migrate=FALSE, sampler = "DE-MCMC", debug = FALSE) {
+  # Repeats sampling until <= nbad stuck chains as defined by cut or max.try
+  # If samples has no content fills it in then repeatedly gets new sets of nmc
+  # samples (nmc can be specified or taken from samples). If end.no.migrate
+  # runs one final time with migration off.
+  if (is.null(samples$theta)) stop("For multiple subjects use run_many_unstuck")
+  nchain <- samples$n.chain
+
+  if (any(is.na(samples$theta[,,2]))) {
+     samples <- run_one(samples = samples, report = report, pm=pm, qm = qm,
+       gammamult = gammamult, ngroup = 6, force = FALSE,
+        sampler = sampler, debug = debug)
+  }
+
+  if ( is.na(nmc) ) nmc <- samples$nmc
+  try.num <- 1
+
+  repeat {
+     cat(paste("\nTry", try.num, "\n"))
+     if ( length(PickStuck(samples, verbose = verbose)) <= nbad ) break
+
+     samples <- run_one(RestartSamples(nmc, samples),
+       report=report, pm=pm, qm = qm, gammamult = gammamult,
+       ngroup = 6, force = FALSE, sampler = sampler, debug = debug)
+     if (try.num >= max.try) break
+     try.num <- try.num + 1
+  }
+
+  if (end.no.migrate) {
+     samples <- run_one(RestartSamples(nmc, samples),
+       report=report, pm=0, qm = qm, gammamult = gammamult,
+       ngroup = 6, force = FALSE, sampler = sampler, debug = debug)
+  }
+
+  return(samples)
+}
+
+##' @rdname run
+##' @export
+run_converge <- function(samples, nmc, report=1e2,
+  gammamult=2.38, cut=1.1, max.try=100, minN=NA, meanN=NA, transform=TRUE,
+  autoburnin=FALSE, split=TRUE, verbose=FALSE, sampler = "DE-MCMC",
+  debug = FALSE)
+  # Adds samples repeatedly, throws away intial samples if gelman.diag better
+  # and repeats until gelman.diag Multivariate psrf < cut and once that is
+  # fulfilled will continue if necessary to get either min or mean effectiveSize
+{
+  if (!is.na(minN) & !is.na(meanN)) {
+    warning("Both minN and meanN specified, using minN")
+    meanN <- NA
+  }
+  if (!is.na(minN)) nfun <- "min"
+  if (!is.na(meanN)) {
+    nfun <- "mean"
+    minN <- meanN
+  }
+
+  if ( is.null(samples$theta) ) stop("For multiple subjects use run_many_unstuck")
+
+  if ( any(is.na(samples$theta[,,2])) ) {
+    samples <- run_one(samples = samples, report = report, pm=0, qm=0,
+      gammamult = gammamult, ngroup = 6, force = FALSE,
+      sampler = sampler, debug = debug)
+
+    gd <- ggdmc:::gelman.diag.mpsrf(theta.as.mcmc.list(samples, split=split),
+      autoburnin=autoburnin, transform=transform)
+    if (verbose) cat(paste("MPSRF: ", gd, "\n"))
+
+  } else {
+    gd <- Inf
+  }
+
+  if ( !is.na(minN) & (gd <= cut) ) {
+    okN <- do.call(nfun, list(ggdmc:::effectiveSize.dmc(samples))) > minN
+  } else {
+    okN <- TRUE
+  }
+
+  if ( (gd > cut) | !okN ) {  # Do more sampling
+      if (is.na(nmc)) nmc <- samples$nmc
+      try.num <- 0
+      effectiveN <- NA
+      repeat {
+        samples <- run_one(samples = samples, report = report, pm=0, qm=0,
+          gammamult = gammamult, ngroup = 6, force = FALSE,
+          sampler = sampler, debug = debug)
+
+        gd <- gelman.diag.mpsrf(theta.as.mcmc.list(samples,split=split),
+          autoburnin=autoburnin,transform=transform)
+
+        if ( try.num > 0 ) {
+          # shorter  <- RestartSamples(nmc=0, samples=samples, remove=1:nmc, add=TRUE)
+          # gd.short <- gelman.diag.mpsrf(theta.as.mcmc.list(shorter,split=split),
+          #   autoburnin=autoburnin,transform=transform)
+          # if (gd.short < gd) {
+          #   samples <- shorter
+          #   gd <- gd.short
+          #   if (verbose) cat(paste("Discarding initial", nmc,"samples.\n"))
+          # }
+        }
+
+        if ( try.num >= max.try ) break
+        try.num <- try.num + 1
+        if ( gd <= cut ) {
+
+          if ( is.na(minN) ) {
+            break
+          } else {
+            effectiveN <- do.call(nfun,list(effectiveSize.dmc(samples)))
+            if (effectiveN > minN) break
+          }
+
+        }
+
+        if (verbose) print(paste("N = ", dim(samples$theta)[3],
+          "Multivariate psrf achieved = ", format(gd, digits=3)))
+      }
+  }
+
+  if (verbose) {
+      print(paste("Final multivariate psrf =",gd))
+      cat("Effective sample size\n")
+      print(effectiveSize.dmc(samples))
+  }
+  return(samples)
+
+}
+
+
+##' @rdname run
+##' @export
+run_manyunstuck <- function(samples, nmc=NA, report=1e2, ncore = 1,
+  cut = 10, nbad = 0, max.try=20, pm = 0, qm = 0,
+  gammamult = 2.38, verbose = TRUE,
+  end.no.migrate=FALSE, sampler = "DE-MCMC", debug = FALSE)
+{
+  if ( !is.null(samples$theta) ) stop("Use run_unstuck")
+  if ( is.na(nmc) ) nmc <- samples[[1]]$nmc
+
+  if ( any(is.na(samples[[1]]$theta[,,2])) ) {
+    cat("Getting initial set of samples\n")
+    samples <- run(samples = samples, report = report, ncore = ncore,
+      pm = pm, qm = qm, hpm = 0, gamma.mult = gammamult)
+  }
+
+  if ( get.os() == "windows" & ncore > 1) {
+    cl  <- parallel::makeCluster(ncore)
+    samples <- parallel::parLapply(cl, samples, run_unstuck,
+      nmc, report, cut, nbad, max.try, pm, qm, gammamult, verbose,
+      end.no.migrate, sampler, debug)
+    stopCluster(cl)
+  } else if ( ncore > 1) {
+
+
+    samples <- parallel::mclapply(samples, run_unstuck,
+      nmc, report, cut, nbad, max.try, pm, qm, gammamult, verbose,
+      end.no.migrate, sampler, debug, mc.cores = ncore)
+  } else {
+    samples <- lapply(samples, run_unstuck,
+      nmc, report, cut, nbad, max.try, pm, qm, gammamult, verbose,
+      end.no.migrate, sampler, debug)
+  }
+
+  for(i in 1:length(samples)) {
+    pnames <- GetPNames(attr(samples[[i]]$data, "model"))
+    dimnames(samples[[i]]$theta) <- list(NULL, pnames, NULL)
+    class(samples[[i]]) <- c("model", "list")
+  }
+
+  class(samples) <- c("model", "list")
+  return(samples)
 }
 
 
@@ -800,108 +986,7 @@ ppp.dmc <- function(samples,fun=function(x){mean(x$RT)},n.post=500,
   ppp
 }
 
-#' @export
-run.unstuck.dmc <- function(samples,nmc=NA,report=10,cores=1,
-  cut=10,nbad=0,max.try=100,p.migrate=0,
-  gamma.mult=2.38,verbose=FALSE,
-  end.no.migrate=FALSE)
-  # Repeats sampling until <= nbad stuck chains as defined by cut or max.try
-  # If samples has no content fills it in then repeatedly gets new sets of nmc
-  # samples (nmc can be specified or taken from samples). If end.no.migrate
-  # runs one final time with migration off.
-{
-  if (is.null(samples$theta))
-    stop("For multiple subjects use h.run.unstuck.dmc")
-  n.chain <- dim(samples$theta)[1]
-  if (any(is.na(samples$theta[,,2])))
-    samples <- run.dmc(samples=samples,report=report,cores=cores,
-      gamma.mult=gamma.mult,p.migrate=p.migrate)
-  if ( is.na(nmc) ) nmc <- samples$nmc
-  try.num <- 1
-  repeat {
-    cat(paste("\nTry",try.num,"\n"))
-    if ( length(pickStuck(samples, verbose = verbose)) <= nbad ) break
-    samples <- run.dmc(samples.dmc(nmc=nmc,samples=samples),
-      report=report,cores=cores,p.migrate=p.migrate,
-      gamma.mult=gamma.mult)
-    if (try.num >= max.try) break
-    try.num <- try.num + 1
-  }
-  if (end.no.migrate) samples <- run.dmc(samples.dmc(nmc=nmc,samples=samples),
-    report=report,cores=cores,gamma.mult=gamma.mult)
-  samples
-}
 
-
-#' @export
-run.converge.dmc <- function(samples,nmc,report=10,cores=1,gamma.mult=2.38,
-  cut=1.1,max.try=100,minN=NA,meanN=NA,
-  transform=TRUE,autoburnin=FALSE,split=TRUE,verbose=FALSE)
-  # Adds samples repeatedly, throws away intial samples if gelman.diag better
-  # and repeats until gelman.diag Multivariate psrf < cut and once that is
-  # fulfilled will continue if necessary to get either min or mean effectiveSize
-{
-  if (!is.na(minN) & !is.na(meanN)) {
-    warning("Both minN and meanN specified, using minN")
-    meanN <- NA
-  }
-  if (!is.na(minN)) nfun <- "min"
-  if (!is.na(meanN)) {
-    nfun <- "mean"
-    minN <- meanN
-  }
-  if ( is.null(samples$theta) )
-    stop("For multiple subjects use h.run.converge.dmc")
-  if ( any(is.na(samples$theta[,,2])) ) {
-    samples <- run.dmc(samples=samples,
-      report=report,cores=cores,gamma.mult=gamma.mult)
-    gd <- gelman.diag.mpsrf(theta.as.mcmc.list(samples,split=split),
-      autoburnin=autoburnin,transform=transform)
-    if (verbose) cat(paste("MPSRF: ",gd,"\n"))
-  } else gd <- Inf
-  if ( !is.na(minN) & (gd <= cut) )
-    okN <- do.call(nfun,list(effectiveSize.dmc(samples))) > minN else
-      okN <- TRUE
-    if ( (gd > cut) | !okN )
-    {  # Do more sampling
-      if ( is.na(nmc) ) nmc <- samples$nmc
-      try.num <- 0
-      effectiveN <- NA
-      repeat {
-        samples <- run.dmc(samples.dmc(samples=samples,add=TRUE,nmc=nmc),
-          report=report,cores=cores,gamma.mult=gamma.mult)
-        gd <- gelman.diag.mpsrf(theta.as.mcmc.list(samples,split=split),
-          autoburnin=autoburnin,transform=transform)
-        if ( try.num>0 ) {
-          shorter <- samples.dmc(samples=samples,remove=1:nmc,nmc=0,add=TRUE)
-          gd.short <- gelman.diag.mpsrf(theta.as.mcmc.list(shorter,split=split),
-            autoburnin=autoburnin,transform=transform)
-          if (gd.short < gd) {
-            samples <- shorter
-            gd <- gd.short
-            if (verbose) cat(paste("Discarding initial",nmc,"samples.\n"))
-          }
-        }
-        if ( try.num >= max.try ) break
-        try.num <- try.num + 1
-        if ( gd <= cut ) {
-          if ( is.na(minN) ) break else {
-            effectiveN <- do.call(nfun,list(effectiveSize.dmc(samples)))
-            if (effectiveN > minN) break
-          }
-        }
-        if (verbose) print(paste("N =",dim(samples$theta)[3],
-          "Effective N =",effectiveN,
-          "Multivariate psrf achieved =",format(gd,digits=3)))
-      }
-    }
-    if (verbose) {
-      print(paste("Final multivariate psrf =",gd))
-      cat("Effective sample size\n")
-      print(effectiveSize.dmc(samples))
-    }
-    samples
-}
 
 
 #' @rdname run

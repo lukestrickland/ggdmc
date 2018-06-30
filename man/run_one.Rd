@@ -4,15 +4,12 @@
 \alias{run_one}
 \title{Fit a Bayesian Model to a Single Participant}
 \usage{
-run_one(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler,
-  debug)
+run_one(samples, report, pm, qm, gammamult, ngroup, force, sampler, debug)
 }
 \arguments{
 \item{samples}{a initialized sample}
 
 \item{report}{progress report intervel}
-
-\item{ncore}{number of CPU cores}
 
 \item{pm}{probability of migration}
 
@@ -23,6 +20,8 @@ run_one(samples, report, ncore, pm, qm, gammamult, ngroup, force, sampler,
 \item{force}{PDA re-calculate interval}
 
 \item{sampler}{a string indicating to use which sampler}
+
+\item{ncore}{number of CPU cores}
 }
 \value{
 Bayesian samples

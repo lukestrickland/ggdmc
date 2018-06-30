@@ -12,8 +12,8 @@
 StartNewsamples(nmc, data = NULL, p.prior = NULL, thin = 1,
   nchain = NULL, rp = 0.001)
 
-RestartSamples(nmc, samples = NULL, p.prior = NULL, thin = NULL,
-  rp = 0.001, add = FALSE)
+RestartSamples(nmc, samples = NULL, thin = NULL, rp = 0.001,
+  add = FALSE)
 
 StartManynewsamples(nmc, data = NULL, p.prior = NULL, thin = 1,
   nchain = NULL, rp = 0.001)
