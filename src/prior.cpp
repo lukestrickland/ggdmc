@@ -120,7 +120,7 @@ arma::vec dprior_(arma::vec pvec, std::vector<std::string> dists,
   std::string dist4 ("lnorm_l");
   std::string dist5 ("constant");
   arma::vec out(npar); out.fill(NA_REAL);
-  double x, l, u;
+  double x, l, u, tmp;
 
   for (size_t i = 0; i < npar; i++)
   {
@@ -128,13 +128,17 @@ arma::vec dprior_(arma::vec pvec, std::vector<std::string> dists,
       l = std::isnan(lower[i]) ? -INFINITY : lower[i];
       u = std::isnan(upper[i]) ? INFINITY : upper[i];
       x = pvec[i];
-      out[i] = dtn_scalar(x, p1[i], p2[i], l, u, islog[i]);
-    } else if ( dists[i].compare(dist2) == 0) {  // beta_ul
+      tmp = dtn_scalar(x, p1[i], p2[i], l, u, islog[i]);
+      out[i] = std::isnan(tmp) ? 1e-10 : tmp;
+    } else if ( dists[i].compare(dist2) == 0) {  // beta_lu
+      // Rcout << "beta_lu " << std::endl;
       l = std::isnan(lower[i]) ? 0 : lower[i];
       u = std::isnan(upper[i]) ? 1 : upper[i];
       x = (pvec[i] - l) / (u - l);
-      out[i] = islog[i] ? R::dbeta(x, p1[i], p2[i], islog[i]) - std::log(u - l) :
+      tmp = islog[i] ? R::dbeta(x, p1[i], p2[i], islog[i]) - std::log(u - l) :
         R::dbeta(x, p1[i], p2[i], islog[i]) / (u - l);
+      out[i] = std::isnan(tmp) ? 1e-10 : tmp;
+
     } else if ( dists[i].compare(dist3) == 0) {  // gamma_l
       l = std::isnan(lower[i]) ? 0 : lower[i];
       x = (std::isinf(l) || std::isinf(u)) ? pvec[i] : pvec[i] - l;
@@ -150,6 +154,21 @@ arma::vec dprior_(arma::vec pvec, std::vector<std::string> dists,
       out[i] = 1e-10;
     }
   }
+  return out;
+}
+
+//' @export
+// [[Rcpp::export]]
+double sumlogprior(arma::vec pvec, std::vector<std::string> dists,
+  arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper,
+  arma::uvec islog) {
+
+  arma::vec den = dprior_(pvec, dists, p1, p2, lower, upper, islog);
+  // den.replace(arma::datum::inf, 1e10);  // replace each INFINITY with 1e-10
+  // den.replace(-arma::datum::inf, 1e-10);  // replace each -INFINITY with 1e-10
+  // den.replace(arma::datum::nan, 1e-10);  // replace each nan with 1e-10
+  double out = arma::accu(den);
+  if (std::isnan(out)) { out = -INFINITY; }
   return out;
 }
 
@@ -223,18 +242,6 @@ double summedlogpriorNV(arma::vec pvec, List prior) {
   return sum(dpriorNV(pvecNV, prior)); // sum is in Rcpp
 }
 
-//' @export
-// [[Rcpp::export]]
-double sumlogprior(arma::vec pvec, std::vector<std::string> dists,
-  arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper,
-  arma::uvec islog) {
-
-  arma::vec den = dprior_(pvec, dists, p1, p2, lower, upper, islog);
-  // den.replace(arma::datum::inf, 1e-10);  // replace each INFINITY with 1e-10
-  double out = arma::accu(den);
-  if (std::isnan(out)) out = -INFINITY;
-  return out;
-}
 
 
 

@@ -272,9 +272,12 @@ StartNewsamples <- function(nmc, data = NULL, p.prior = NULL, thin = 1,
 RestartSamples <- function(nmc, samples = NULL, thin = NULL, rp = .001,
   add = FALSE) {
 
+  hyper <- attr(samples, "hyper")
   # model <- CheckSamples(samples, p.prior, NULL)
   # npar  <- length(GetPNames(model))
   if (is.null(samples)) stop("Use StartNewsamples")
+  if (!is.null(hyper)) stop("Use RestartHypersamples")
+
   if (is.null(thin)) thin <- samples$thin
 
   if (is.null(attr(samples$data, "n.pda"))) attr(samples$data, "n.pda") <- 2^14
@@ -300,6 +303,15 @@ StartManynewsamples <- function(nmc, data = NULL, p.prior = NULL, thin = 1,
   npar <- length(p.prior)
   if (is.null(nchain)) nchain <- 3*npar
   if (is.null(p.prior)) stop("No p.prior no new samples")
+
+  if (is.null(attr(data[[1]], "bw"))) {
+    message("No GPU attributes. Default bw = .001, using GPU 0.")
+    for(i in 1:length(data)) {
+      attr(data[[i]], "n.pda") <- 1e4
+      attr(data[[i]], "bw") <- .001
+      attr(data[[i]], "gpuid") <- 0
+    }
+  }
 
   out <- ggdmc::init_newnonhier(nmc, data, p.prior, rp, thin, nchain)
 
@@ -339,13 +351,23 @@ RestartManysamples <- function(nmc, samples = NULL, thin = NULL,
 ##' @export
 StartNewHypersamples <- function(nmc, data = NULL, p.prior = NULL,
   pp.prior = NULL, thin = 1, rp = .001, nchain = NULL) {
-  nchain <- CheckHyperDMI(data, nchain) ## If nchain=NULL, change it to default
 
+  nchain <- CheckHyperDMI(data, nchain) ## If nchain=NULL, change it to default
   if (is.null(p.prior)) stop("No p.prior")   ## Check priors
   if (is.null(pp.prior)) stop("No pp.prior")
   if (!is.list(pp.prior)) stop("pp.prior must be a list")
   if (length(pp.prior[[1]]) < length(pp.prior[[2]]))
     stop("Location priors must have as many or more elements than scale priors")
+
+  if (is.null(attr(data[[1]], "bw"))) {
+    message("No GPU attributes. Default bw = .001, using GPU 0.")
+    for(i in 1:length(data)) {
+      attr(data[[i]], "n.pda") <- 1e4
+      attr(data[[i]], "bw") <- .001
+      attr(data[[i]], "gpuid") <- 0
+    }
+  }
+
 
   model1 <- attr(data[[1]], "model")
   pnames <- GetPNames(model1)
@@ -538,7 +560,7 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0, hpm = 0,
   if (!is.null(hyper)) {   ## hierarchical model
     if (is.null(attr(samples[[1]]$data, "bw"))) {
       message("No GPU attributes. Default bw = .001, using GPU 0.")
-      for(i in 1:length(data.model)) {
+      for(i in 1:length(data)) {
         attr(samples[[i]]$data, "bw") <- .001
         attr(samples[[i]]$data, "gpuid") <- 0
       }
@@ -549,7 +571,8 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0, hpm = 0,
       out <- run_hyper_dmc(samples, report, pm, hpm, gamma.mult, ncore, debug)
     } else if (sampler == "DGMC") {
       message("Run Hierarchical DGMC")
-      out <- run_hyper_dgmc(samples, report, pm, qm, gamma.mult, ngroup, ncore)
+      out <- run_hyper_dgmc(samples, report, pm, hpm, qm, gamma.mult, ngroup,
+        ncore)
     } else {
       out <- NULL
       message("Unknown sampler?")

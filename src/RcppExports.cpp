@@ -1257,6 +1257,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sumlogprior
+double sumlogprior(arma::vec pvec, std::vector<std::string> dists, arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper, arma::uvec islog);
+RcppExport SEXP _ggdmc_sumlogprior(SEXP pvecSEXP, SEXP distsSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP islogSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::vec >::type pvec(pvecSEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type dists(distsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type p1(p1SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type p2(p2SEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< arma::uvec >::type islog(islogSEXP);
+    rcpp_result_gen = Rcpp::wrap(sumlogprior(pvec, dists, p1, p2, lower, upper, islog));
+    return rcpp_result_gen;
+END_RCPP
+}
 // dpriorNV
 NumericVector dpriorNV(NumericVector pvec, List prior);
 RcppExport SEXP _ggdmc_dpriorNV(SEXP pvecSEXP, SEXP priorSEXP) {
@@ -1278,23 +1295,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type pvec(pvecSEXP);
     Rcpp::traits::input_parameter< List >::type prior(priorSEXP);
     rcpp_result_gen = Rcpp::wrap(summedlogpriorNV(pvec, prior));
-    return rcpp_result_gen;
-END_RCPP
-}
-// sumlogprior
-double sumlogprior(arma::vec pvec, std::vector<std::string> dists, arma::vec p1, arma::vec p2, arma::vec lower, arma::vec upper, arma::uvec islog);
-RcppExport SEXP _ggdmc_sumlogprior(SEXP pvecSEXP, SEXP distsSEXP, SEXP p1SEXP, SEXP p2SEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP islogSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::vec >::type pvec(pvecSEXP);
-    Rcpp::traits::input_parameter< std::vector<std::string> >::type dists(distsSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type p1(p1SEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type p2(p2SEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type lower(lowerSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type upper(upperSEXP);
-    Rcpp::traits::input_parameter< arma::uvec >::type islog(islogSEXP);
-    rcpp_result_gen = Rcpp::wrap(sumlogprior(pvec, dists, p1, p2, lower, upper, islog));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1439,19 +1439,20 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_hyper_dgmc
-List run_hyper_dgmc(List samples, unsigned int report, double pm, double qm, double gammamult, unsigned int ngroup, unsigned int ncore);
-RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP qmSEXP, SEXP gammamultSEXP, SEXP ngroupSEXP, SEXP ncoreSEXP) {
+List run_hyper_dgmc(List samples, unsigned int report, double pm, double hpm, double qm, double gammamult, unsigned int ngroup, unsigned int ncore);
+RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP hpmSEXP, SEXP qmSEXP, SEXP gammamultSEXP, SEXP ngroupSEXP, SEXP ncoreSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< List >::type samples(samplesSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type report(reportSEXP);
     Rcpp::traits::input_parameter< double >::type pm(pmSEXP);
+    Rcpp::traits::input_parameter< double >::type hpm(hpmSEXP);
     Rcpp::traits::input_parameter< double >::type qm(qmSEXP);
     Rcpp::traits::input_parameter< double >::type gammamult(gammamultSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ngroup(ngroupSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, report, pm, qm, gammamult, ngroup, ncore));
+    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, report, pm, hpm, qm, gammamult, ngroup, ncore));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1646,9 +1647,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_n1PDF_plba2", (DL_FUNC) &_ggdmc_n1PDF_plba2, 14},
     {"_ggdmc_n1PDF_plba3", (DL_FUNC) &_ggdmc_n1PDF_plba3, 14},
     {"_ggdmc_dprior_", (DL_FUNC) &_ggdmc_dprior_, 7},
+    {"_ggdmc_sumlogprior", (DL_FUNC) &_ggdmc_sumlogprior, 7},
     {"_ggdmc_dpriorNV", (DL_FUNC) &_ggdmc_dpriorNV, 2},
     {"_ggdmc_summedlogpriorNV", (DL_FUNC) &_ggdmc_summedlogpriorNV, 2},
-    {"_ggdmc_sumlogprior", (DL_FUNC) &_ggdmc_sumlogprior, 7},
     {"_ggdmc_rprior_scalar", (DL_FUNC) &_ggdmc_rprior_scalar, 1},
     {"_ggdmc_rprior_mat", (DL_FUNC) &_ggdmc_rprior_mat, 2},
     {"_ggdmc_rprior_vec", (DL_FUNC) &_ggdmc_rprior_vec, 5},
@@ -1659,7 +1660,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_run_dgmc", (DL_FUNC) &_ggdmc_run_dgmc, 8},
     {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 7},
     {"_ggdmc_run_hyper_dmc", (DL_FUNC) &_ggdmc_run_hyper_dmc, 7},
-    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 7},
+    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 8},
     {"_ggdmc_rtn_scalar", (DL_FUNC) &_ggdmc_rtn_scalar, 4},
     {"_ggdmc_dtnorm", (DL_FUNC) &_ggdmc_dtnorm, 6},
     {"_ggdmc_rtnorm", (DL_FUNC) &_ggdmc_rtnorm, 5},

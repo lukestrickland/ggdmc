@@ -714,6 +714,11 @@ dprior_ <- function(pvec, dists, p1, p2, lower, upper, islog) {
 }
 
 #' @export
+sumlogprior <- function(pvec, dists, p1, p2, lower, upper, islog) {
+    .Call('_ggdmc_sumlogprior', PACKAGE = 'ggdmc', pvec, dists, p1, p2, lower, upper, islog)
+}
+
+#' @export
 dpriorNV <- function(pvec, prior) {
     .Call('_ggdmc_dpriorNV', PACKAGE = 'ggdmc', pvec, prior)
 }
@@ -721,11 +726,6 @@ dpriorNV <- function(pvec, prior) {
 #' @export
 summedlogpriorNV <- function(pvec, prior) {
     .Call('_ggdmc_summedlogpriorNV', PACKAGE = 'ggdmc', pvec, prior)
-}
-
-#' @export
-sumlogprior <- function(pvec, dists, p1, p2, lower, upper, islog) {
-    .Call('_ggdmc_sumlogprior', PACKAGE = 'ggdmc', pvec, dists, p1, p2, lower, upper, islog)
 }
 
 #' @rdname rprior
@@ -854,8 +854,8 @@ run_hyper_dmc <- function(samples, report, pm, hpm, gammamult, ncore, debug) {
 }
 
 #' @export
-run_hyper_dgmc <- function(samples, report, pm, qm, gammamult, ngroup, ncore) {
-    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, report, pm, qm, gammamult, ngroup, ncore)
+run_hyper_dgmc <- function(samples, report, pm, hpm, qm, gammamult, ngroup, ncore) {
+    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, report, pm, hpm, qm, gammamult, ngroup, ncore)
 }
 
 rtn_scalar <- function(mean, sd, l, u) {
