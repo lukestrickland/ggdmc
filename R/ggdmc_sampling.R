@@ -1073,7 +1073,7 @@ FlatTests <- function(samples,p1=1/3,p2=1/3,cut.location=0.25,cut.scale=Inf,
 #' @rdname run
 #' @export
 MixTests <- function(samples, verbose=FALSE, cut = 1.01, split=TRUE) {
-  tmp <- gelman.diag.dmc(samples,split=split)
+  tmp <- gelman(samples, split=split)
   gds <- c(tmp$mpsrf,tmp$psrf[,1])
   fail <- max(gds) > cut
   if (verbose) {

@@ -5,13 +5,14 @@
 \alias{phi.as.mcmc.list}
 \title{Convert Theta to a mcmc List}
 \usage{
-theta.as.mcmc.list(samples, start = 1, end = NA, split = FALSE,
-  subchain = FALSE)
+theta.as.mcmc.list(x, start = 1, end = NA, split = FALSE,
+  subchain = FALSE, nsubchain = 3, thin = NA)
 
-phi.as.mcmc.list(hyper, start = 1, end = NA, split = FALSE, thin = 1)
+phi.as.mcmc.list(x, start = 1, end = NA, split = FALSE,
+  subchain = FALSE, nsubchain = 3)
 }
 \arguments{
-\item{samples}{a sample list}
+\item{x}{a sample list}
 
 \item{start}{start iteration}
 

@@ -108,26 +108,28 @@ unstick <- function(samples, bad)
 #' When \code{split} switch is TRUE, the function doubles number of chains,
 #' first and second half.
 #'
-#' @param samples a sample list
+#' @param x a sample list
 #' @param start start iteration
 #' @param end end iteraton
 #' @param split whether to divide one MCMC sequence into two sequences.
 #' @importFrom coda mcmc mcmc.list
 #' @export
-theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE,
-  subchain = FALSE)
-{
-  thin   <- samples$thin
-  nchain <- samples$n.chains
+theta.as.mcmc.list <- function(x, start = 1, end = NA, split = FALSE,
+  subchain = FALSE, nsubchain = 3, thin = NA) {
+
+  if (is.na(thin)) thin <- x$thin
+  nchain <- x$n.chains
 
   if (subchain) {
-    chain.idx <- sample(1:nchain, 3)
-    nchain <- 3
+    message("pMCMC diagnosis randomly select a subset of chains: ", appendLF = FALSE)
+    chain.idx <- base::sample(1:nchain, nsubchain)
+    cat(chain.idx, "\n")
+    nchain <- nsubchain
   } else {
     chain.idx <- 1:nchain
   }
 
-  if (is.na(end)) end <- samples$nmc
+  if (is.na(end)) end <- x$nmc
 
   lst <- vector(mode = "list", length = nchain * ifelse(split, 2, 1))
   idx <- start:end
@@ -144,13 +146,13 @@ theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE,
   }
 
   for (i in 1:nchain) {
-    lst[[i]] <- mcmc( t(samples$theta[chain.idx[i], , idx[is.in]]),
+    lst[[i]] <- coda::mcmc( t(x$theta[chain.idx[i], , idx[is.in]]),
       thin = thin)
   }
 
   if (split) {
     for (i in 1:nchain) {
-      lst[[i+nchain]] <- mcmc( t(samples$theta[chain.idx[i], , idx[not.is.in]]),
+      lst[[i+nchain]] <- mcmc( t(x$theta[chain.idx[i], , idx[not.is.in]]),
         thin = thin)
     }
   }
@@ -158,24 +160,35 @@ theta.as.mcmc.list <- function(samples, start = 1, end = NA, split = FALSE,
   mcmc.list(lst)
 }
 
-#' @rdname theta.as.mcmc.list
-#' @importFrom coda mcmc mcmc.list
-#' @export
-phi.as.mcmc.list <- function(hyper, start = 1, end = NA, split = FALSE, thin = 1)
-{
+##' @rdname theta.as.mcmc.list
+##' @importFrom coda mcmc mcmc.list
+##' @export
+phi.as.mcmc.list <- function(x, start = 1, end = NA, split = FALSE,
+  subchain = FALSE, nsubchain = 3) {
+
+  thin   <- x$thin   ## x == hyper
+  nchain <- x$n.chains
+
+  if (subchain) {
+    message("pMCMC diagnosis randomly select a subset of chains: ", appendLF = FALSE)
+    chain.idx <- base::sample(1:nchain, nsubchain)
+    cat(chain.idx, "\n")
+    nchain <- nsubchain
+  } else {
+    chain.idx <- 1:nchain
+  }
+
   # Parameters that are not constants
-  ok1 <- lapply(hyper$pp.prior,function(x){
-    lapply(x,function(y){attr(y,"dist")!="constant"})})
-  ok2 <- paste(names(ok1[[2]])[unlist(ok1[[2]])],"h2",sep=".")
-  ok1 <- paste(names(ok1[[1]])[unlist(ok1[[1]])],"h1",sep=".")
-  if ( is.na(end) ) end <- dim(hyper$phi[[1]])[3]
-  nchain <- dim(hyper$h_log_likelihoods)[2]
+  ok1 <- lapply(x$pp.prior,function(x){
+    lapply(x,function(y){attr(y, "dist") != "constant"})})
+  ok2 <- paste(names(ok1[[2]])[unlist(ok1[[2]])], "h2", sep=".")
+  ok1 <- paste(names(ok1[[1]])[unlist(ok1[[1]])], "h1", sep=".")
+  if ( is.na(end) ) end <- x$nmc
 
   lst <- vector(mode = "list", length = nchain)
   indx <- start:end
 
-  if (split) is.in <- !as.logical(indx %% 2) else
-    is.in <- rep(TRUE,length(indx))
+  if (split) is.in <- !as.logical(indx %% 2) else is.in <- rep(TRUE, length(indx))
   if (split) {
     not.is.in <- !is.in
     if ( sum(not.is.in) > sum(is.in) ) {
@@ -186,36 +199,44 @@ phi.as.mcmc.list <- function(hyper, start = 1, end = NA, split = FALSE, thin = 1
   }
 
   for (i in 1:nchain) {
-    tmp1 <- t(hyper$phi[[1]][i,,indx[is.in]])
+    tmp1 <- t(x$phi[[1]][chain.idx[i], , indx[is.in]]) ## nmc x npar matrix
+    ## attach parnames with h1
     dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1", sep=".")
-    tmp1 <- tmp1[,ok1]
-    tmp2 <- t(hyper$phi[[2]][i,,indx[is.in]])
+    tmp1 <- tmp1[,ok1]  ## exclude constant parameter
+
+    ## same thing on scale
+    tmp2 <- t(x$phi[[2]][chain.idx[i], , indx[is.in]])
     dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2", sep=".")
     tmp2 <- tmp2[,ok2]
-    # Remove cases with !has.sigma
-    tmp2 <- tmp2[,!apply(tmp2,2,function(x){all(is.na(x))})]
-    lst[[i]] <- mcmc(cbind(tmp1,tmp2),thin=thin)
+
+    ## Remove cases with !has.sigma
+    tmp2 <- tmp2[,!apply(tmp2, 2, function(x){all(is.na(x))})]
+    lst[[i]] <- coda::mcmc(cbind(tmp1, tmp2), thin = thin)
   }
+
   if (split) {
     for (i in 1:nchain) {
-      tmp1 <- t(hyper$phi[[1]][i,,indx[not.is.in]])
+      tmp1 <- t(x$phi[[1]][chain.idx[i], , indx[not.is.in]])
       dimnames(tmp1)[[2]] <- paste(dimnames(tmp1)[[2]],"h1", sep=".")
       tmp1 <- tmp1[,ok1]
-      tmp2 <- t(hyper$phi[[2]][i,,indx[not.is.in]])
+      tmp2 <- t(x$phi[[2]][chain.idx[i], , indx[not.is.in]])
       dimnames(tmp2)[[2]] <- paste(dimnames(tmp2)[[2]],"h2", sep=".")
       tmp2 <- tmp2[,ok2]
       # Remove cases with !has.sigma
       tmp2 <- tmp2[,!apply(tmp2,2,function(x){all(is.na(x))})]
-      lst[[i + nchain]] <- mcmc(cbind(tmp1,tmp2),thin=thin)
+      lst[[i + nchain]] <- coda::mcmc(cbind(tmp1,tmp2), thin = thin)
     }
   }
-  mcmc.list(lst)
+
+  return(coda::mcmc.list(lst))
 }
 
 #' Gelman and Rubin Convergence Diagnostic
 #'
-#' \code{gelman.diag.dmc}  calls \pkg{coda} gelman.diag to get R hats for one
+#' \code{gelman} calls \pkg{coda} gelman.diag to get R hats for one
 #' or a list of subjects. It can calculate at the data or hyper level.
+#' R hat for one or list of subjects or hyper level.
+#' split doubles the number of chains by spliting into 1st and 2nd halves.
 #'
 #' @param x a DMC sample
 #' @param hyper a switch to extract hyper attribute and calculate it
@@ -276,42 +297,92 @@ phi.as.mcmc.list <- function(hyper, start = 1, end = NA, split = FALSE, thin = 1
 #' gelman.diag.dmc(hsamples0, hyper=TRUE)
 #' gelman.diag.dmc(hsamples0)
 #' @export
-gelman.diag.dmc <- function(samples,hyper=FALSE,digits=2,start=1,
-  autoburnin=FALSE,transform=TRUE,end=NA, split=TRUE,verbose=TRUE)
-  # R hat for one or list of subjects or hyper level.
-  # split doubles the number of chains by spliting into 1st and 2nd halves.
+gelman <- function(x, hyper = FALSE, start = 1, end=NA, confidence = 0.95,
+  transform=TRUE, autoburnin = FALSE, multivariate = TRUE, split = TRUE,
+  subchain = FALSE, nsubchain = 3, digits = 2, verbose = TRUE)
 {
   if ( hyper ) {
-    hyper <- attr(samples,"hyper")
+    message("Diagnosing the hyper parameters, phi")
+    hyper <- attr(x, "hyper")
+    thin <- hyper$thin
     if (is.na(end)) end <- hyper$nmc
-    gelman.diag(phi.as.mcmc.list(hyper,start=start,end=end,split=split),
-      autoburnin=autoburnin,transform=transform)
+
+    mcmclist <- ggdmc:::phi.as.mcmc.list(hyper, start, end, split,
+      subchain, nsubchain)
+
+    out <- coda::gelman.diag(mcmclist, confidence, transform, autoburnin,
+      multivariate)
+
   } else {
-    if ( !is.null(samples$theta) ) {
-      if (is.na(end)) end <- samples$nmc
-      gelman.diag(theta.as.mcmc.list(samples,start=start,end=end,split=split),
-        autoburnin=autoburnin,transform=transform)
+    ## if x is one subject samples, we should found an elemnet called theta
+    if ( !is.null(x$theta) ) {
+      message("Diagnosing a single participant, theta")
+      if (is.na(end)) end <- x$nmc
+      mcmclist <- ggdmc:::theta.as.mcmc.list(x, start, end, split, subchain,
+        nsubchain)
+      out <- coda::gelman.diag(mcmclist, confidence, transform, autoburnin,
+        multivariate)
     } else {
-      out <- vector(mode="list",length=length(samples))
-      start <- rep(start,length.out=length(samples))
-      end <- rep(end,length.out=length(samples))
-      names(out) <- names(samples)
-      for (i in 1:length(samples)) {
-        if ( is.na(end[i]) ) end[i] <- samples[[i]]$nmc
-        out[[i]] <- gelman.diag(theta.as.mcmc.list(samples[[i]],start=start[i],
-          end=end[i],split=split),autoburnin=autoburnin,transform=transform)
+      message("Diagnosing theta for many participants separately")
+      nsub <- length(x)
+      out   <- vector(mode = "list", length = nsub)
+      start <- rep(start, length.out = nsub)
+      end   <- rep(end, length.out = nsub)
+      subchain <- rep(subchain, length.out = nsub)
+      nsubchain   <- rep(nsubchain, length.out = nsub)
+      names(out) <- names(x)
+
+      for (i in 1:nsub) {
+        if ( is.na(end[i]) ) end[i] <- x[[i]]$nmc
+        mcmclist <- ggdmc:::theta.as.mcmc.list(x[[i]], start[i], end[i], split,
+          subchain[i], nsubchain[i])
+        out[[i]] <- gelman.diag(mcmclist, confidence, transform, autoburnin,
+          multivariate)
       }
-      tmp <- unlist(lapply(out,function(x){x$mpsrf}))
+
+      tmp <- unlist(lapply(out, function(x){x$mpsrf}))
+
       if (verbose) {
-        print(round(sort(tmp),digits))
+        print(round(sort(tmp), digits))
         cat("Mean\n")
-        print(round(mean(tmp),digits))
+        print(round(mean(tmp), digits))
       }
+
       invisible(out)
     }
   }
+
+  return(out)
 }
 
+
+##' @rdname gelman
+##' @export
+hgelman <- function(x, start = 1, end = NA, confidence = 0.95, transform = TRUE,
+  autoburnin = FALSE, multivariate = TRUE, split = TRUE, subchain = FALSE,
+  nsubchain = 3, digits = 2, verbose=TRUE, ...) {
+
+  step1 <- lapply(gelman(x, start = start, end = end, confidence = confidence,
+    transform = transform, autoburnin = autoburnin, multivariate = multivariate,
+    split=split, subchain = subchain, nsubchain = nsubchain, verbose=FALSE),
+    function(x){x$mpsrf})
+
+  out <- base::sort(unlist(step1)) ## non-hyper
+
+  if ( any(names(attributes(x)) == "hyper") ) {
+    hyper.gd <- gelman(x, hyper = TRUE, start = start, end = end,
+      confidence = confidence, transform = transform, autoburnin = autoburnin,
+      multivariate = multivariate, split=split, subchain = subchain,
+      nsubchain = nsubchain, verbose=FALSE)
+
+    out <- c(hyper.gd$mpsrf, out)
+    names(out) <- c("hyper", names(step1))
+  }
+
+
+  if (verbose) print(round(out, digits))
+  invisible(out)
+}
 
 #' Effective Sample Size for Estimating the Mean
 #'
@@ -441,8 +512,8 @@ summary.model <- function(object, hyper = FALSE, start = 1, end = NA,
     message("Random-effec model with multiple participants")
     hyper <- attr(object, "hyper")
     if (is.na(end)) end <- hyper$nmc
-    tmp <- summary(phi.as.mcmc.list(hyper, start=start, end=end,
-      thin = hyper$thin))
+    mcmclist <- phi.as.mcmc.list(hyper, start=start, end=end)
+    tmp <- summary(mcmclist)
 
     if (hmeans) {
       out <- matrix(tmp$statistics[, "Mean"], nrow = 2,
