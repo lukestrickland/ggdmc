@@ -152,7 +152,7 @@ void MutateDGMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
   unsigned int npda, double bw, unsigned int ncore,
   unsigned int gpuid) {
 
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::mat theta  = arma::trans(usetheta);    // theta: npar x nchain
   unsigned int npar   = theta.n_rows;
   unsigned int nchain = theta.n_cols;
@@ -169,7 +169,11 @@ void MutateDGMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
 
     for (size_t ii = 0; ii < m; ii++) {
       k = subchains(ii);
-      tmp = theta.col(k) + R::runif(-rp, rp);
+
+      for (size_t j = 0; j < npar; j++) {
+        tmp(j) = theta(j, k) + R::runif(-rp, rp);
+      }
+
       tmp_lp = sumlogprior(tmp, dists, p1, p2, lower, upper, islog);
       tmp_ll = sumloglike(tmp, pnames, allpar, parnames, model, type, dim1,
         dim2, dim3, n1idx, ise, cellidx, RT, matchcell, isr1, npda, bw, ncore,
@@ -178,7 +182,8 @@ void MutateDGMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
       if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
 
       cur_logpos = usell(k) + uselp(k);
-      if (R::runif(0.0, 1.0) < std::exp(tmp_logpos - cur_logpos)) {
+      mh = std::exp(tmp_logpos - cur_logpos);
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
         theta.col(k) = tmp;
         uselp(k) = tmp_lp;
         usell(k) = tmp_ll;
@@ -199,7 +204,7 @@ void MutateDGMCHyperchains(arma::field<arma::mat>& usephi,
   double rp) {
 
   unsigned int k, start, end;
-  double tmp_logpos, cur_logpos, tmp_hll, tmp_hlp;
+  double tmp_logpos, cur_logpos, tmp_hll, tmp_hlp, mh;
   arma::mat useloc = arma::trans(usephi[0]); //npar x nchain
   arma::mat usesca = arma::trans(usephi[1]);
   unsigned int nchain = useloc.n_cols;
@@ -222,15 +227,19 @@ void MutateDGMCHyperchains(arma::field<arma::mat>& usephi,
         usesca.col(k), plower, pupper, plog);
       cur_logpos = usehlp(k) + usehll(k);
 
-      tmp_loc = useloc.col(k) + R::runif(-rp, rp);
-      tmp_sca = usesca.col(k) + R::runif(-rp, rp);
+      for (size_t jj = 0; jj < npar; jj++) {
+        tmp_loc(jj) = useloc(jj, k) + R::runif(-rp, rp);
+        tmp_sca(jj) = usesca(jj, k) + R::runif(-rp, rp);
+      }
+
       tmp_hlp = sumloghprior(tmp_loc, tmp_sca, ldists, sdists, lp1, sp1, lp2,
                              sp2, llower, slower, lupper, supper, llog, slog);
       tmp_hll = sumloghlike(thetas.slice(k), pdists, tmp_loc, tmp_sca,
                             plower, pupper, plog);
       tmp_logpos = tmp_hlp + tmp_hll;
-      if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-      if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+      // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+      mh = std::exp(tmp_logpos - cur_logpos);
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
         useloc.col(k) = tmp_loc; // npar x nchain
         usesca.col(k) = tmp_sca;
         usehlp(k)  = tmp_hlp;
@@ -260,7 +269,7 @@ void MutateDGMCDataChains(arma::mat& usetheta,    // nchain x npar
   unsigned int ncore = 1, unsigned int gpuid = 0, double rp = .001) {
 
   unsigned int start, end, k;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::mat p1_ = arma::trans(usephi0); // npar x nchain
   arma::mat p2_ = arma::trans(usephi1); // npar x nchain
   arma::mat theta = arma::trans(usetheta);    // theta: npar x nchain
@@ -278,15 +287,19 @@ void MutateDGMCDataChains(arma::mat& usetheta,    // nchain x npar
     for (size_t j = 0; j < m; j++) {
       k = subchains(j);
       cur_logpos = usell(k) + uselp(k);
-      tmp = theta.col(k) + R::runif(-rp, rp);
+
+      for(size_t jj = 0; jj < npar; jj++) {
+        tmp(j) = theta(j, k) + R::runif(-rp, rp);
+      }
+
       tmp_lp = sumlogprior(tmp, dists, p1_.col(k), p2_.col(k), lower, upper,
                            islog);
       tmp_ll = sumloglike(tmp, pnames, allpar, parnames, model, type, dim1,
                           dim2, dim3, n1idx, ise, cellidx, RT, matchcell, isr1,
                           npda, bw, ncore, gpuid, false);
       tmp_logpos = tmp_lp + tmp_ll;
-      if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-      if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+      mh = std::exp(tmp_logpos - cur_logpos);
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
         theta.col(k) = tmp;
         uselp(k) = tmp_lp;
         usell(k) = tmp_ll;
@@ -307,7 +320,7 @@ void CrossoverDGMCHyperchains(arma::field<arma::mat>& usephi,
   double rp, double gammaMult) {
 
   unsigned int k0, k1, k2, start, end, m;
-  double tmp_hll, tmp_hlp, tmp_logpos, cur_logpos;
+  double tmp_hll, tmp_hlp, tmp_logpos, cur_logpos, mh;
   arma::uvec dchains, subchains; // direction chains
   arma::vec hgamma, tmp_loc, tmp_sca;
   arma::mat useloc = arma::trans(usephi(0)); //npar x nchain
@@ -348,8 +361,9 @@ void CrossoverDGMCHyperchains(arma::field<arma::mat>& usephi,
 
 
       tmp_logpos = tmp_hlp + tmp_hll;
-      if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-      if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+      mh = std::exp(tmp_logpos - cur_logpos);
+      // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh ) )  {
         useloc.col(k0) = tmp_loc; // npar x nchain
         usesca.col(k0) = tmp_sca;
         usehlp(k0)  = tmp_hlp;
@@ -379,7 +393,7 @@ void CrossoverDGMCDatachains(arma::mat& usetheta,    // nchain x npar
   double rp, double gammamult) {
 
   unsigned int k0, k1, k2, start, end, m;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::uvec dchains, subchains;
   arma::vec gamma, tmp;
 
@@ -413,8 +427,9 @@ void CrossoverDGMCDatachains(arma::mat& usetheta,    // nchain x npar
                           dim2, dim3, n1idx, ise, cellidx, RT, matchcell, isr1,
                           npda, bw, ncore, gpuid, false);
       tmp_logpos = tmp_ll + tmp_lp;
-      if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-      if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+      // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+      mh = std::exp(tmp_logpos - cur_logpos);
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh ) )  {
         theta.col(k0) = tmp;
         uselp(k0) = tmp_lp;
         usell(k0) = tmp_ll;
@@ -435,7 +450,7 @@ void CrossoverDMCHyperchains(arma::field<arma::mat>& usephi,
   double gammaMult) {
 
   unsigned int k0, k1, k2;
-  double tmp_hll, tmp_hlp, tmp_logpos, cur_logpos, epup;
+  double tmp_hll, tmp_hlp, tmp_logpos, cur_logpos, mh;
   arma::uvec chains, subchains;
   arma::vec hgamma, tmp_loc, tmp_sca;
   arma::mat useloc = arma::trans(usephi(0)); // npar x nchain
@@ -472,8 +487,8 @@ void CrossoverDMCHyperchains(arma::field<arma::mat>& usephi,
       pupper, plog);
     tmp_logpos = tmp_hlp + tmp_hll;
 
-    epup = std::exp(tmp_logpos - cur_logpos);
-    if ( !std::isnan(epup) && (R::runif(0, 1) < epup) )  {
+    mh = std::exp(tmp_logpos - cur_logpos);
+    if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
       useloc.col(k0) = tmp_loc; // npar x nchain
       usesca.col(k0) = tmp_sca;
       usehlp(k0) = tmp_hlp;
@@ -500,7 +515,7 @@ void CrossoverDMCDatachains(arma::mat& usetheta,    // nchain x npar
   bool debug = false) {
 
   unsigned int k0, k1, k2;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, epup;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::uvec chains, subchains;
   arma::vec gamma, tmp;
 
@@ -523,8 +538,6 @@ void CrossoverDMCDatachains(arma::mat& usetheta,    // nchain x npar
     k1 = subchains(0);
     k2 = subchains(1);
 
-    // uselp(k0) = sumlogprior(theta.col(k0), dists, phi0.col(k0), phi1.col(k0),
-    //   lower, upper, islog);
     cur_logpos = uselp(k0) + usell(k0);
 
     tmp = theta.col(k0) + (gamma % (theta.col(k1) - theta.col(k2))) + noise;
@@ -534,11 +547,10 @@ void CrossoverDMCDatachains(arma::mat& usetheta,    // nchain x npar
       dim3, n1idx, ise, cellidx, RT, matchcell, isr1, npda, bw, ncore, gpuid,
       debug);
     tmp_logpos = tmp_ll + tmp_lp;
-    if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
 
-    epup = std::exp(tmp_logpos - cur_logpos);
-
-    if ( !std::isnan(epup) && (R::runif(0, 1) < epup) )  {
+    // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+    mh = std::exp(tmp_logpos - cur_logpos);
+    if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
        theta.col(k0) = tmp;
        uselp(k0)     = tmp_lp;
        usell(k0)     = tmp_ll;
@@ -561,7 +573,7 @@ void CrossoverDGMCChains(arma::mat& usetheta,    // nchain x npar
 
   // Rcout << "CrossoverDGMCChains" << std::endl;
   unsigned int k0, k1, k2, start, end, m;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::uvec dchains, subchains; // direction chains
   arma::vec gamma, tmp;
 
@@ -594,8 +606,10 @@ void CrossoverDGMCChains(arma::mat& usetheta,    // nchain x npar
         dim2, dim3, n1idx, ise, cellidx, RT, matchcell, isr1, npda, bw, ncore,
         gpuid, false);
       tmp_logpos = tmp_lp + tmp_ll;
-      if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-      if (R::runif(0.0, 1.0) < std::exp(tmp_logpos - cur_logpos)) {
+      // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+
+      mh = std::exp(tmp_logpos - cur_logpos);
+      if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
         theta.col(k0) = tmp;
         uselp(k0) = tmp_lp;
         usell(k0) = tmp_ll;
@@ -624,7 +638,7 @@ void CrossoverDMCChains(arma::mat& usetheta,    // nchain x npar
 {
   // Ter Braak's crossover (2006), expect I randomly select a current chain
   unsigned int k0, k1, k2;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
   arma::uvec chains, subchains;
   arma::vec gamma, tmp;
   arma::mat theta = arma::trans(usetheta);   // theta: npar x nchain;
@@ -665,8 +679,9 @@ void CrossoverDMCChains(arma::mat& usetheta,    // nchain x npar
       dim3, n1idx, ise, cellidx, RT, matchcell, isr1, npda, bw, ncore, gpuid,
       debug);
     tmp_logpos = tmp_lp + tmp_ll;
-    if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-    if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+    // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+    mh = std::exp(tmp_logpos - cur_logpos);
+    if ( !std::isnan(mh) && (R::runif(0, 1) < mh) )  {
       theta.col(k0) = tmp;
       uselp(k0) = tmp_lp;
       usell(k0) = tmp_ll;
@@ -676,71 +691,6 @@ void CrossoverDMCChains(arma::mat& usetheta,    // nchain x npar
 }
 
 
-
-
-
-// void MigrateDMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
-//   std::vector<std::string> pnames,
-//   std::vector<std::string> dists, arma::vec p1, arma::vec p2, arma::vec lower,
-//   arma::vec upper, arma::uvec islog, arma::vec allpar,
-//   std::vector<std::string> parnames, arma::ucube model, std::string type,
-//   std::vector<std::string> dim1,
-//   std::vector<std::string> dim2,
-//   std::vector<std::string> dim3,
-//   arma::umat n1idx, arma::uvec ise,
-//   arma::umat cellidx, arma::vec RT,
-//   arma::uvec matchcell, arma::uvec isr1,
-//   double rp, double gammamult, bool force, unsigned int nsim,
-//   double bw, unsigned int ncore, unsigned int gpuid, bool debug) {
-//   double tmp_logpos, cur_logpos;
-//   arma::mat theta = arma::trans(usetheta);    // theta: npar x nchain
-//   unsigned int npar   = theta.n_rows;
-//   unsigned int nchain = theta.n_cols;
-//   arma::uvec subchains = GetSubchains(nchain); // eg, 0, 1, 3, 4, 8; could be just 1 chain
-//   unsigned int nsubchain = subchains.n_elem;
-//
-//   arma::mat tmp(npar, nsubchain);
-//   arma::vec cur_lp(nsubchain), cur_ll(nsubchain), noise;
-//   arma::vec tmp_lp(nsubchain), tmp_ll(nsubchain);
-//
-//   for(size_t i = 0; i < nsubchain; i++) {
-//     noise = 2.0 * rp * arma::randu<arma::vec>(npar) + rp;
-//     tmp.col(i) = theta.col(subchains(i)) + noise; // proposal
-//     cur_lp(i) = uselp(subchains(i));
-//     cur_ll(i) = usell(subchains(i));
-//     tmp_lp(i) = sumlogprior(tmp.col(i), dists, p1, p2, lower, upper, islog);
-//     tmp_ll(i) = sumloglike(tmp.col(i), pnames, allpar, parnames,
-//       model, type, dim1, dim2, dim3, n1idx, ise, cellidx, RT,
-//       matchcell, isr1, nsim, bw, ncore, gpuid, debug);
-//   }
-//
-//   // Conduct topological migration within subchains;
-//   // starting from the last subchain;
-//   // each individual chain/chromosome in subchains is treated as a subgroup
-//   tmp_logpos = tmp_ll(nsubchain - 1) + tmp_lp(nsubchain - 1);
-//   cur_logpos = cur_ll(0) + cur_lp(0);   // migrate to the first subchain
-//   if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-//   if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
-//     theta.col(subchains(0)) = tmp.col(nsubchain - 1);
-//     uselp(subchains(0)) = tmp_lp(nsubchain - 1);
-//     usell(subchains(0)) = tmp_ll(nsubchain - 1);
-//   }
-//
-//   // Continue migration, if nsubchain > 1
-//   if (nsubchain != 1) {
-//     for(size_t k = 0; k < (nsubchain - 2); k++) {
-//       tmp_logpos = tmp_ll(k) + tmp_lp(k);
-//       cur_logpos = cur_ll(k + 1) + cur_lp(k + 1);
-//       if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-//       if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
-//         theta.col(subchains(k + 1))   = tmp.col(k);
-//         uselp(subchains(k + 1)) = tmp_lp(k);
-//         usell(subchains(k + 1))  = tmp_ll(k);
-//       }
-//     }
-//   }
-//   usetheta = arma::trans(theta);
-// }
 
 void MigrateDMCHyperchains_old(arma::field<arma::mat>& usephi,
   arma::vec& usehlp, arma::vec& usehll,  arma::cube theta,
@@ -829,19 +779,22 @@ void MigrateDMCHyperchains(arma::field<arma::mat>& usephi,
   arma::uvec subchains = GetSubchains(nchain);
   unsigned int nsubchain = subchains.n_elem;
   arma::vec cur_hlp(nsubchain), cur_hll(nsubchain), cur_loc, cur_sca,
-  tmp_loc(npar), tmp_sca(npar), noise(npar);
+  tmp_loc(npar), tmp_sca(npar);
 
   unsigned int next_chain, k;
   double tmp_hlp, tmp_hll, tmp_logpos, cur_logpos, mh;
 
   for(size_t i = 0; i < nsubchain; i++) { // 0, 1, 2, 5, ...
 
-    for(size_t j = 0; j < npar; j++) noise(j) = R::runif(-rp, rp);
     next_chain = ((i+1) == nsubchain) ? subchains(0) : subchains(i+1);
     k = subchains(i);
 
-    tmp_loc = useloc.col(k) + noise;
-    tmp_sca = usesca.col(k) + noise;
+    for (size_t j = 0; j < npar; j++) {
+      tmp_loc(j) = useloc(j, k) + R::rnorm(useloc(j, k), rp);
+      tmp_sca(j) = usesca(j, k) + R::rnorm(usesca(j, k), rp);
+    }
+
+
 
     tmp_hlp = sumloghprior(tmp_loc, tmp_sca, ldists, sdists,
       lp1, sp1, lp2, sp2, llower, slower, lupper, supper, llog, slog);
@@ -849,6 +802,7 @@ void MigrateDMCHyperchains(arma::field<arma::mat>& usephi,
       pupper, plog);
     tmp_logpos = tmp_hlp + tmp_hll;
     // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+
 
     /* CRITICAL. Update usehll for new theta; nsub x npar x nchain */
     usehll(next_chain) = sumloghlike(theta.slice(next_chain), pdists,
@@ -877,7 +831,7 @@ void MigrateDGMCHyperchains(arma::field<arma::mat>& usephi,
   unsigned int ngroup, double rp) {
   // Rcout << "MigrateDGMC Hyperchains" << std::endl;
   unsigned int start, end, next, k, l;
-  double tmp_hlp, tmp_hll, tmp_logpos, cur_hlp, cur_hll, cur_logpos;
+  double tmp_hlp, tmp_hll, tmp_logpos, cur_hlp, cur_hll, cur_logpos, mh;
 
   arma::mat useloc = arma::trans(usephi(0)); // nchain x npar to npar x nchain
   arma::mat usesca = arma::trans(usephi(1));
@@ -918,8 +872,9 @@ void MigrateDGMCHyperchains(arma::field<arma::mat>& usephi,
           usesca.col(next), plower, pupper, plog);
         cur_logpos = usehlp(next) + usehll(next);
 
-        if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-        if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+        // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+        mh = std::exp(tmp_logpos - cur_logpos);
+        if ( !std::isnan(mh) && (R::runif(0, 1) < mh ) )  {
           useloc.col(next) = tmp_loc;
           usesca.col(next) = tmp_sca;
           usehlp(next)    = tmp_hlp;
@@ -953,7 +908,7 @@ void MigrateDGMCDatachains(arma::mat& usetheta,    // nchain x npar
 {
   // Rcout << "MigrateDGMC Data chains" << std::endl;
   unsigned int start, end, next, k, l;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_lp, cur_ll, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_lp, cur_ll, cur_logpos, mh;
 
   arma::mat phi0 = arma::trans(usephi0);
   arma::mat phi1 = arma::trans(usephi1);
@@ -987,8 +942,9 @@ void MigrateDGMCDatachains(arma::mat& usetheta,    // nchain x npar
           gpuid, debug);
         tmp_logpos = tmp_lp + tmp_ll;
         cur_logpos = uselp(next) + usell(next);
-        if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
-        if (R::runif(0, 1) < std::exp(tmp_logpos - cur_logpos)) {
+        // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+        mh = std::exp(tmp_logpos - cur_logpos);
+        if ( !std::isnan(mh) && (R::runif(0, 1) < mh ) )  {
           theta.col(next) = tmp;
           uselp(next) = tmp_lp;
           usell(next) = tmp_ll;
@@ -1026,17 +982,20 @@ void MigrateDMCDatachains(arma::mat& usetheta,    // nchain x npar
   unsigned int nsubchain = subchains.n_elem;
 
   unsigned int next_chain, k;
-  arma::vec theta_cur, theta_star(npar), noise(npar);
+  arma::vec theta_cur, theta_star(npar);
   double tmp_lp, tmp_ll, tmp_logpos, cur_logpos, mh;
 
   for (size_t i = 0; i < nsubchain; i++) {
 
-    for(size_t j = 0; j < npar; j++) noise(j) = R::runif(-rp, rp);
     next_chain = ((i+1) == nsubchain) ? subchains(0) : subchains(i+1);
     k = subchains(i);
 
     theta_cur  = theta.col(next_chain);
-    theta_star = theta.col(k) + noise;
+
+    for (size_t jj = 0; jj < npar; jj++) {
+      theta_star(jj) = theta(jj, k) + R::rnorm(theta(jj, k), rp);
+    }
+
 
     tmp_lp = sumlogprior(theta_star, dists, phi0.col(k), phi1.col(k), lower,
       upper, islog);
@@ -1147,7 +1106,7 @@ void MigrateDGMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
   unsigned int ncore, unsigned int gpuid) {
 
   unsigned int start, end, next, k, l;
-  double tmp_lp, tmp_ll, tmp_logpos, cur_lp, cur_ll, cur_logpos;
+  double tmp_lp, tmp_ll, tmp_logpos, cur_lp, cur_ll, cur_logpos, mh;
   arma::mat theta = arma::trans(usetheta);    // theta: npar x nchain
   unsigned int npar   = theta.n_rows;
   unsigned int nchain = theta.n_cols;
@@ -1178,9 +1137,11 @@ void MigrateDGMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
           dim2, dim3, n1idx, ise, cellidx, RT,matchcell, isr1, npda, bw, ncore,
           gpuid, false);
         tmp_logpos = tmp_lp + tmp_ll;
-        if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
+        // if (std::isnan(tmp_logpos)) tmp_logpos = -INFINITY;
         cur_logpos = uselp(next) + usell(next);
-        if (R::runif(0.0, 1.0) < std::exp(tmp_logpos - cur_logpos)) {
+
+        mh = std::exp(tmp_logpos - cur_logpos);
+        if ( !std::isnan(mh) && (R::runif(0, 1) < mh ) )  {
           theta.col(next) = tmp;
           uselp(next) = tmp_lp;
           usell(next) = tmp_ll;
@@ -1220,7 +1181,9 @@ void MigrateDMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
 
     k = subchains(i);
     theta_cur = theta.col(next_chain);
-    for (size_t j = 0; j < npar; j++) theta_star(j) = R::rnorm(theta(j, k), rp);
+    for (size_t j = 0; j < npar; j++) {
+      theta_star(j) = theta(j, k) + R::rnorm(theta(j, k), rp);
+    }
 
     tmp_lp = sumlogprior(theta_star, dists, p1, p2, lower, upper, islog);
     tmp_ll = sumloglike(theta_star, pnames, allpar, parnames, model, type, dim1,
