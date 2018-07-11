@@ -1,7 +1,7 @@
 # Dynamic Models of Choice with Better Graphic Tools and Quicker Computations 
 
 _ggdmc_, evolving from dynamic model of choice (_DMC_, Heathcote et al., 2018),
-is a generic tool for conducting hierarchical Bayesian Computations, esp.  
+is a generic tool for conducting hierarchical Bayesian Computations, esp. for  
 cognitive models.  
 
 1. Instead of using Gibbs or HMC, _ggdmc_ uses population-based MCMC (pMCMC) 
@@ -21,6 +21,11 @@ But one might still consider to turn it off, because it is essentially a
 sampler, similar to random-walk Metropolis, which is less efficient than the 
 _crossover_ operator. Mostly, pMCMC is efficient when a combination of 
 operatoers is applied together. 
+
+4. _ggdmc_ uses two parallel methods. First is via the _parallel_ package in R.
+This facilitates the computations for fitting many participants, namely 
+fixed-effects models.  The second is via OpenMP at C++ level. This facilitates 
+the computations for fitting hierarchical models. 
 
 ## Getting Started
 Below is an example using the LBA Model (Brown & Heathcote, 2008). 
