@@ -854,8 +854,8 @@ run_hyper_dmc <- function(samples, report, pm, hpm, gammamult, ncore, debug) {
 }
 
 #' @export
-run_hyper_dgmc <- function(samples, report, pm, hpm, qm, gammamult, ngroup, ncore) {
-    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, report, pm, hpm, qm, gammamult, ngroup, ncore)
+run_hyper_dgmc <- function(samples, report, pm, hpm, qm, hqm, gammamult, ngroup, ncore) {
+    .Call('_ggdmc_run_hyper_dgmc', PACKAGE = 'ggdmc', samples, report, pm, hpm, qm, hqm, gammamult, ngroup, ncore)
 }
 
 rtn_scalar <- function(mean, sd, l, u) {

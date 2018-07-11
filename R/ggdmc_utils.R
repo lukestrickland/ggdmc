@@ -502,11 +502,11 @@ post.predict.ggdmc <- function(samples, n.post=100, probs=c(1:99)/100,
   #n.post <- 100
   DT <- data.table::data.table(samples$data)
 
-  model <- attributes(samples$data)$model
+  model <- attr(samples$data, "model")
   facs  <- names(attr(model, "factors"));
   nfacs <- length(facs)
   resp  <- names(attr(model, "responses")) ## sometimes do not have names
-  ns <- DT[, .N, facs]                     ## number of trails for each level of stimulus factor
+  ns <- DT[, .N, facs]                     ## number of trials for each level of stimulus factor
   n.rep <- sum(ns$N)                       ## total number of data points
   n.par <- dim(samples$theta)[2]         ## dim[1]=chains; dim[2]=list of para; dim[3]=samples
 
@@ -533,7 +533,8 @@ post.predict.ggdmc <- function(samples, n.post=100, probs=c(1:99)/100,
   ## Key step; 1:1*nrep, 20001:2*n.rep, 40001:3*n.rep
   for (i in 1:n.post)
   {
-    sim[(1 + (i - 1)*n.rep):(i*n.rep),] <- ggdmc:::simulate.model(model, posts[i,], ns)
+    sim[(1 + (i - 1)*n.rep):(i*n.rep),] <- ggdmc:::simulate.model(model,
+      nsim = ns, ps = posts[i,])
     if ( (i %% report) == 0) cat(".")
   }
 
@@ -843,4 +844,23 @@ getboundsR <- function(data) {
   bound
 }
 
+
+##' @export
+CheckRJ <- function(object, verbose = TRUE, ...) {
+  nchain <- object$n.chains
+  nsamp <- 1 + (object$nmc - object$start) * object$thin;
+
+  for(i in 1:nchain) {
+    mr <- sum(object$rejection_rate[i, 2:nsamp] == 2 |
+        object$rejection_rate[i, 2:nsamp] == 1) / nsamp
+    rj <- sum(object$rejection_rate[i, 2:nsamp] == 2 |
+        object$rejection_rate[i, 2:nsamp] == 4) / nsamp
+    if (verbose) {
+      cat("Chain ", i)
+      cat(": migration and rejection rates: ", round(mr, 2), " ",
+        round(rj, 2), "\n")
+      # cat(": rejection rates: ", round(rj, 2), "\n")
+    }
+  }
+}
 

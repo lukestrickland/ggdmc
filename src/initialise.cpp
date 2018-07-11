@@ -56,23 +56,25 @@ List init_new(unsigned int nmc, List pprior, List data, double rp,
     }
   }
 
+  // auto ngroup
+
   List out = List::create(
-    Rcpp::Named("theta")            = theta,
-    Rcpp::Named("summed_log_prior") = slp,
-    Rcpp::Named("log_likelihoods")  = ll,
-    Rcpp::Named("data")             = data,
-    Rcpp::Named("p.prior")          = pprior,
-    Rcpp::Named("start")            = 1,
-    Rcpp::Named("n.pars")           = npar,
-    Rcpp::Named("p.names")          = pnames,
-    Rcpp::Named("rp")               = rp,
-    Rcpp::Named("nmc")              = nmc,
-    Rcpp::Named("thin")             = thin,
-    Rcpp::Named("n.chains")         = nchain,
-    Rcpp::Named("npda")             = npda,
-    Rcpp::Named("gpuid")            = gpuid,
-    Rcpp::Named("bw")               = bw,
-    Rcpp::Named("ncore")            = ncore);
+    Named("theta")            = theta,
+    Named("summed_log_prior") = slp,
+    Named("log_likelihoods")  = ll,
+    Named("data")             = data,
+    Named("p.prior")          = pprior,
+    Named("start")            = 1,
+    Named("n.pars")           = npar,
+    Named("p.names")          = pnames,
+    Named("rp")               = rp,
+    Named("nmc")              = nmc,
+    Named("thin")             = thin,
+    Named("n.chains")         = nchain,
+    Named("npda")             = npda,
+    Named("gpuid")            = gpuid,
+    Named("bw")               = bw,
+    Named("ncore")            = ncore);
   return out;
 }
 

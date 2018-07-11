@@ -254,18 +254,22 @@ preplot_model <- function(object, y, hyper, xlim, start, end, pll, bar,
 ##' @export
 ##' @importFrom ggmcmc ggs
 plot.model <- function(x, y = NULL, hyper = FALSE, start = 1,
-  end = NA, pll = TRUE, save = FALSE, den = FALSE, ...) {
+  end = NA, pll = TRUE, save = FALSE, den = FALSE, subchain = FALSE,
+  nsubchain = 3, chains = NA, ...) {
 
   if (hyper) {
     # DT <- preplot_phi(x, start, end, pll)
-    out <- plot_phi(x, start, end, pll, save, den)
+    out <- plot_phi(x, start, end, pll, save, den, subchain, nsubchain,
+      chains)
   } else if (!is.null(x$theta)) {
     ## single subject
     # DT <- preplot_one(x, start, end, pll)
-    out <- plot_one(x, start, end, pll, save, den)
+    out <- plot_one(x, start, end, pll, save, den, subchain, nsubchain,
+      chains)
   } else {
     # DT <- preplot_many(x, start, end, pll)
-    out <- plot_many(x, start, end, pll, save, den)
+    out <- plot_many(x, start, end, pll, save, den, subchain, nsubchain,
+      chains)
   }
   return(out)
 }
@@ -303,18 +307,27 @@ preplot_one <- function(x, start = 1, end = NA, pll = TRUE) {
 ##' @export
 ##' @import ggplot2
 ##' @importFrom ggmcmc ggs
-plot_one <- function(x, start, end, pll, save, den, ...) {
+plot_one <- function(x, start, end, pll, save, den, subchain, nsubchain,
+  chains, ...) {
 
   DT <- preplot_one(x, start, end, pll)
 
+  if (subchain) {
+    if (missing(nsubchain)) stop("Please supply nsubchain")
+    if (any(is.na(chains))) chains <- base::sample( unique(DT$Chain), nsubchain)
+    cat("Plot chains: ", chains, "\n")
+    DT <- DT[ DT$Chain %in% chains, ]
+  }
+
   if (pll) {
     DT$Parameter <- "lp"
-    ## Output 1
+
     f1 <- ggplot(DT) +
       geom_line(aes(x = Iteration, y = value, color = Chain)) +
       ylab("Log-posterior likelihood") +
       theme(legend.position = "none")
     print(f1)
+
   } else if (den) {
 
     f1 <- ggplot(DT, aes(x = value, colour = Chain, fill = Chain)) +
@@ -347,13 +360,22 @@ preplot_many <- function(x, start = 1, end = NA, pll = TRUE) {
 
 ##' @import ggplot2
 ##' @export
-plot_many <- function(x, start, end, pll, save, den, ...) {
+plot_many <- function(x, start, end, pll, save, den, subchain, nsubchain,
+  chains, ...) {
 
   nsub <- length(x)
   DT <- preplot_many(x, start, end, pll)
+
+  if (subchain) {
+    if (missing(nsubchain)) stop("Please supply nsubchain")
+    if (any(is.na(chains))) chains <- base::sample(x[[1]]$n.chains, nsubchain)
+    cat("Plot chains: ", chains, "\n")
+  }
+
   x0 <- NULL
   for(i in 1:nsub) {
     tmp <- DT[[i]]
+    if (subchain) tmp <- tmp[ tmp$Chain %in% chains, ]
     tmp$s <- factor(i)
     x0 <- rbind(x0, tmp)
   }
@@ -422,9 +444,18 @@ preplot_phi <- function(x, start = 1, end = NA, pll = TRUE, ...) {
 ##' @importFrom coda mcmc mcmc.list
 ##' @importFrom ggmcmc ggs ggs_density ggs_traceplot
 ##' @importFrom gridExtra grid.arrange
-plot_phi <- function(x, start, end, pll, save, den, ...) {
+plot_phi <- function(x, start, end, pll, save, den, subchain, nsubchain,
+  chains, ...) {
 
   DT <- preplot_phi(x, start, end, pll)
+
+  if (subchain) {
+    if (missing(nsubchain)) stop("Please supply nsubchain")
+    if (any(is.na(chains))) chains <- base::sample(unique(DT$Chain), nsubchain)
+    cat("Plot chains: ", chains, "\n")
+    DT <- DT[ DT$Chain %in% chains, ]
+  }
+
 
   if (pll) {
     DT$Parameter <- "lp"
@@ -463,15 +494,16 @@ plot_phi <- function(x, start, end, pll, save, den, ...) {
 #' @importFrom graphics plot
 #' @export
 plot_subchain <- function(x, nchain, hyper = FALSE, start = 1,
-  end = NA) {
+  end = NA, idx = NA) {
 
   if ( is.na(end) ) end <- x$nmc
   if ( end <= start ) stop("End must be greater than start")
   if (x$n.chain < nchain) stop("nchain is too large")
 
-  idx <- sample(1:x$n.chains, nchain)
+  if (is.na(idx)) idx <- sample(1:x$n.chains, nchain)
   lp <- x$summed_log_prior[start:end,idx] + x$log_likelihoods[start:end,idx]
-  d <- coda::mcmc.list(lapply(data.frame(lp), function(xx){coda::mcmc(as.matrix(xx))}))
+  d <- coda::mcmc.list(lapply(data.frame(lp),
+    function(xx){coda::mcmc(as.matrix(xx))}))
   DT <- ggmcmc::ggs(d)
   DT$Chain <- factor(DT$Chain)
   levels(DT$Chain)

@@ -1,5 +1,8 @@
 #include <RcppArmadillo.h>
 
+void InitializeOneSubject(Rcpp::List samples, arma::umat& rj);
+void InitializeSubjectRJ(Rcpp::List samples, arma::field<arma::umat>& rj);
+
 void TransformSubjects(Rcpp::List samples, arma::field<arma::cube>& thetas,
   arma::field<arma::mat>& usethetas, arma::field<arma::mat>& logpriors,
   arma::field<arma::vec>& uselogpriors, arma::field<arma::mat>& loglikes,

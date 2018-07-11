@@ -1,3 +1,4 @@
+### Stuck -------------------------------------------------------
 #' Which Chains Get Stuck
 #'
 #' Calculate each chain separately for the mean (across many MCMC iterations)
@@ -47,8 +48,7 @@
 #' plot(s3)
 #' }
 PickStuck <- function(samples, hyper = FALSE, cut = 10, start = 1, end = NA,
-                      verbose = FALSE, digits = 2)
-{
+                      verbose = FALSE, digits = 2) {
   # hyper = FALSE
   # cut = 10
   # start = 1
@@ -98,7 +98,7 @@ unstick <- function(samples, bad)
   return(samples)
 }
 
-
+### MCMC -------------------------------------------------------
 #' Convert Theta to a mcmc List
 #'
 #' \code{theta.as.mcmc.list} extracts data-level parameter array, \code{theta},
@@ -152,7 +152,7 @@ theta.as.mcmc.list <- function(x, start = 1, end = NA, split = FALSE,
 
   if (split) {
     for (i in 1:nchain) {
-      lst[[i+nchain]] <- mcmc( t(x$theta[chain.idx[i], , idx[not.is.in]]),
+      lst[[i+nchain]] <- coda::mcmc( t(x$theta[chain.idx[i], , idx[not.is.in]]),
         thin = thin)
     }
   }
@@ -384,6 +384,18 @@ hgelman <- function(x, start = 1, end = NA, confidence = 0.95, transform = TRUE,
   invisible(out)
 }
 
+##' @rdname gelman
+##' @export
+gelman.diag.mpsrf <- function(mcmclist, autoburnin, transform) {
+  # robust version ONLY USED IN sampling.R IN run.converge.dmc
+  # SHOULD BE ROLLED OUT OVER FOLLOWING FUNCITONS TO AVOID CRASHES OF
+  # AUTO PROCEDURES.
+
+  gd <- try(gelman.diag(mcmclist,
+    autoburnin=autoburnin,transform=transform),silent=TRUE)
+  if (class(gd)=="try-error") Inf else gd$mpsrf
+}
+
 #' Effective Sample Size for Estimating the Mean
 #'
 #' \code{effectiveSize.dmc} calls \pkg{coda} effectiveSize to effective size
@@ -465,6 +477,155 @@ effectiveSize.dmc <- function(x, hyper=FALSE, digits=0,start=1,end=NA)
   }
 }
 
+
+## Summary ------------------------------------------------------
+##' @rdname summary.model
+##' @export
+summary_hyper <- function(object, start, end, hmeans, hci, prob, digits) {
+
+  message("Random-effect model with multiple participants")
+  hyper <- attr(object, "hyper")
+
+  if (is.na(end)) {
+    # message("end is missing detected.")
+    end <- hyper$nmc
+  }
+
+  npar <- hyper$n.pars
+  mcmclist <- phi.as.mcmc.list(hyper, start=start, end=end)
+  hest <- summary(mcmclist)
+
+  if (hmeans) {
+    h1 <- hest$statistics[1:npar, "Mean"]
+    h2 <- hest$statistics[(1+npar):(2*npar), "Mean"]
+    out <- round(rbind(h1, h2), digits)
+
+  } else if (hci) {
+    quan <- hest$quantiles[, prob]
+    conf <- cbind( quan[1:npar, ], quan[(1+npar):(2*npar), ])
+    parname_noh <- unlist(strsplit(dimnames(conf)[[1]], ".h1"))
+    rep_percent <- dimnames(conf)[[2]]
+    per_names <- paste(c("L", "S"), colnames(conf))
+    dimnames(conf) <- list(parname_noh, per_names)
+    out <- round(conf, digits)
+  } else {
+    out <- hest
+  }
+
+  return(out)
+}
+
+##' @rdname summary.model
+##' @export
+summary_one <- function(object, start, end) {
+
+  message("Single Participant")
+  if (is.na(end)) end <- object$nmc
+  out <- coda:::summary.mcmc.list(theta.as.mcmc.list(object, start = start,
+    end = end))
+  return(out)
+
+}
+
+##' @importFrom matrixStats colMeans2
+##' @rdname summary.model
+##' @export
+summary_many <- function(object, start, end, verbose) {
+  message("Summary each participant separately")
+  nsub <- length(object)
+
+  out1 <- vector("list", nsub)
+  start <- rep.int(start, nsub)
+  end <- rep.int(end, nsub)
+  names(out1) <- names(object)
+
+  for (i in 1:nsub) {
+    if ( is.na(end[i]) ) end[i] <- object[[i]]$nmc
+    out1[[i]] <- coda:::summary.mcmc.list(theta.as.mcmc.list(object[[i]],
+      start = start[i], end = end[i]))
+  }
+
+  df_form <- t(data.frame(lapply(out1, function(x){x[[1]][, 1]})))
+  out2 <- rbind(df_form, matrixStats::colMeans2(df_form))
+  row.names(out2) <- c(names(object), "Mean")
+  if (verbose) return(out1) else (out2)
+}
+
+##' @rdname summary.model
+##' @export
+summary_recoverone <- function(object, start, end, ps, digits, verbose) {
+
+  if (missing(start)) start <- object$start
+  if (missing(end)) end <- object$end
+
+  qs <- summary_one(object, start, end)$quantiles
+
+  if (!is.null(ps) && (!all(dimnames(qs)[[1]] %in% names(ps))))
+    stop("Names of p.vector do not match parameter names in samples")
+
+  est  <- qs[names(ps), "50%"]
+  op.vector <- ps[order(names(ps))]
+  oest <- est[order(names(est))]
+  bias <- oest- op.vector
+
+  lo  <- qs[names(ps), "2.5%"]
+  hi  <- qs[names(ps), "97.5%"]
+  olo <- lo[order(names(lo))]
+  ohi <- hi[order(names(hi))]
+
+  out  <- rbind(
+    'True'          = op.vector,
+    '2.5% Estimate' = olo,
+    '50% Estimate'  = oest,
+    '97.5% Estimate'= ohi,
+    'Median-True'   = bias)
+
+  if (verbose) print(round(out, digits))
+  invisible(return(out))
+}
+
+##' @rdname summary.model
+##' @export
+summary_recovermany <- function(object, start, end, ps, digits) {
+
+  est <- summary_many(object, start, end, TRUE)
+
+  df_form <- t(data.frame(lapply(est, function(x){x[[1]][, 1]})))
+
+  mean.est <- matrixStats::colMeans2(df_form)
+  mean.ps <- matrixStats::colMeans2(ps)
+  sd.est <- matrixStats::colSds(df_form)
+  sd.ps <- matrixStats::colSds(ps)
+
+  pnames <- colnames(ps)
+  loc <- rbind(mean.est, mean.ps, mean.ps - mean.est)
+  sca <- rbind(sd.est, sd.ps, sd.ps - sd.est)
+  out <- rbind(loc, sca)
+
+  rownames(out) <- c("Mean", "True", "Diff", "Sd", "True", "Diff")
+  colnames(out) <- object[[1]]$p.names
+  print(round(out, digits))
+  invisible(return(out))
+}
+
+##' @rdname summary.model
+##' @export
+summary_recoverhyper <- function(object, start, end, ps, type, digits,
+  verbose) {
+
+  hyper <- attr(object, "hyper")
+  samples <- list(theta = attr(hsam, "hyper")$phi[[type]])
+  samples$n.chains <- hyper$n.chains
+  samples$nmc <- hyper$nmc
+  samples$thin <- hyper$thin
+  out <- suppressMessages(
+    summary_recoverone(samples, start, end, ps, digits, verbose)
+  )
+  return(out)
+
+}
+
+
 #' Summarise a DMC Sample with One Participant
 #'
 #' Call coda package to summarise the model parameters in a DMC samples
@@ -476,82 +637,38 @@ effectiveSize.dmc <- function(x, hyper=FALSE, digits=0,start=1,end=NA)
 #' \code{start=101} and \code{end=1000}, instructs the function to calculate
 #' from 101 to 1000 iteration. Default uses the last iteration.
 #' @param ... other arguments
-#' @keywords summary
 #' @export
 #' @examples
-#' m1 <- model.dmc(
-#' p.map=list(a="1",v="1",z="1",d="1",sz="1",sv="1", t0="1",st0="1"),
-#' constants=c(st0=0,d=0),
-#' match.map=list(M=list(s1="r1",s2="r2")),
-#' factors=list(S=c("s1","s2")),
-#' responses=c("r1","r2"),
-#' type="rd")
-#'
-#' p.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", 6),
-#'   p1=c(a=2,   v=2.5, z=0.5, sz=0.3, sv=1,  t0=0.3),
-#'   p2=c(a=0.5, v=.5,  z=0.1, sz=0.1, sv=.3, t0=0.05),
-#'   lower=c(0,-5, 0, 0, 0, 0),
-#'   upper=c(5, 7, 2, 2, 2, 2))
-#'
-#' pVec <- c(a=1,v=1, z=0.5, sz=0.25, sv=0.2,t0=.15)
-#'
-#' dat1 <- simulate(m1, nsim=30, p.vector=pVec)
-#' mdi1 <- BindDataModel(dat1, m1)
-#'
-#' samples0 <- samples(nmc=100, p.prior=p.prior, data=mdi1)
-#' samples0 <- run(samples0, p.migrate=.05)
-#' gelman.diag.dmc(samples0)
-#' class(samples0)
-#' ## [1] "dmc"
-#' summary(samples0)
+#' model <- BuildModel(p.map = list(A="1", B="R", t0="1",
+#' mean_v=c("F", "M"), sd_v="M", st0="1"),
+#' match.map = list(M = list(s1=1, s2=2)),
+#' factors   = list(S = c("s1", "s2"),F = c("f1", "f2")),
+#' constants = c(sd_v.false = 1, st0 = 0),
+#' responses = c("r1", "r2"),
+#' type      = "norm")
+#' npar <- length(GetPNames(model))
 summary.model <- function(object, hyper = FALSE, start = 1, end = NA,
-  hmeans = FALSE, hci = FALSE, ..., digits = 2) {
+  hmeans = FALSE, hci = FALSE, prob = c("2.5%", "50%", "97.5%"),
+  recovery = FALSE, ps = NA, type = 1, verbose = FALSE, ..., digits = 2) {
 
-  if (hyper || hmeans || hci) {
-    message("Random-effec model with multiple participants")
-    hyper <- attr(object, "hyper")
-    if (is.na(end)) end <- hyper$nmc
-    mcmclist <- phi.as.mcmc.list(hyper, start=start, end=end)
-    tmp <- summary(mcmclist)
+  if ( recovery && !is.null(object$theta) ) {
+    if (any(is.na(ps))) stop("Some true values are NAs.")
+    out <- summary_recoverone(object, start, end, ps, digits, verbose)
 
-    if (hmeans) {
-      out <- matrix(tmp$statistics[, "Mean"], nrow = 2,
-        dimnames = list(c("h1", "h2"), object[[1]]$p.names))
-    } else if (hci) {
-      tmp1 <- tmp$quantiles[,c(1,3,5)]
-      tmp1 <- round(cbind(tmp1[1:(dim(tmp1)[1]/2),],
-        tmp1[((dim(tmp1)[1]/2)+1):dim(tmp1)[1],]),2)
-      dimnames(tmp1) <- list(unlist(strsplit(
-        dimnames(tmp1)[[1]],".h1")),
-        paste0(c("MEAN: ","",""," SD:  ","",""),dimnames(tmp1)[[2]]) )
-      out <- round(tmp1, digits)
-    } else {
-      out <- tmp
-    }
+  } else if (hyper && recovery)  {
+    out <- summary_recoverhyper(object, start, end, ps, type, digits,
+      verbose)
 
+  } else if (recovery && is.null(object$theta)) {
+    if (any(is.na(ps))) stop("Some true values are NAs.")
+    out <- summary_recovermany(object, start, end, ps, digits)
+
+  } else if (hyper) {
+    out <- summary_hyper(object, start, end, hmeans, hci, prob, digits)
   } else if (!is.null(object$theta)) {
-    message("Single Participant")
-
-    if (is.na(end)) end <- object$nmc
-    out <- summary(theta.as.mcmc.list(object, start = start, end = end))
+    out <- summary_one(object, start, end)
   } else {
-    message("Summary each participant separately")
-
-    out   <- vector(mode = "list", length = length(object))
-    start <- rep(start, length.out = length(object))
-    end <- rep(end, length.out = length(object))
-    names(out) <- names(object)
-    for (i in 1:length(object)) {
-      if ( is.na(end[i]) ) end[i] <- object[[i]]$nmc
-      out[[i]] <- summary(theta.as.mcmc.list(object[[i]], start = start[i],
-        end = end[i]))
-    }
-    tmp <- t(data.frame(lapply(out, function(x){x[[1]][, 1]})))
-    tmp <- rbind(tmp, apply(tmp, 2, mean))
-    row.names(tmp) <- c(names(object), "Mean")
-    print(round(tmp, digits))
-    invisible(out)
+    out <- summary_many(object, start, end, verbose)
   }
 
   return(out)
@@ -559,8 +676,7 @@ summary.model <- function(object, hyper = FALSE, start = 1, end = NA,
 }
 
 
-
-### Priors, likelihoods and model selection
+### Priors, likelihoods and model selection ----------------------
 
 pll.dmc <- function(samples,hyper=FALSE,start=1,end=NA,prior=FALSE,
   like=FALSE,subject=NA)
@@ -782,60 +898,6 @@ p.fun.dmc <- function(samples,fun,hyper=FALSE,ptype=1)
      as.vector(apply(attr(samples,"hyper")$phi[[ptype]],c(1,3),fun))
 }
 
-#' @importFrom matrixStats colSds
-#' @export
-CheckRecovery <- function(samples, p.vector, start, hyper = FALSE,
-  digits = 2, verbose = TRUE)
-{
-  if (hyper) {
-
-    est <- summary(samples)
-    tmp <- t(data.frame(lapply(est, function(x){x[[1]][, 1]})))
-    mean.est <- colMeans(tmp)
-    mean.ps <- colMeans(p.vector)
-    sd.est <- matrixStats::colSds(tmp)
-    sd.ps <- matrixStats::colSds(p.vector)
-
-    pnames <- colnames(ps)
-    loc <- rbind(mean.est, mean.ps, mean.ps - mean.est)
-    sca <- rbind(sd.est, sd.ps, sd.ps - sd.est)
-    out <- rbind(loc, sca)
-    rownames(out) <- c("Mean", "True", "Diff", "Sd", "True", "Diff")
-    if (verbose) print(round(out, digits))
-    invisible(return(out))
-
-  } else {
-    if (missing(p.vector)) stop("Please supply true values.")
-    if (missing(start)) start <- samples$start
-
-    qs <- summary.model(samples, start = start)$quantiles
-    if (!is.null(p.vector) && (!all(dimnames(qs)[[1]] %in% names(p.vector))))
-      stop("Names of p.vector do not match parameter names in samples")
-
-    est  <- qs[names(p.vector), "50%"]
-
-    op.vector <- p.vector[order(names(p.vector))]
-    oest <- est[order(names(est))]
-    bias <- oest- op.vector
-
-    lo   <- qs[names(p.vector), "2.5%"]
-    hi   <- qs[names(p.vector), "97.5%"]
-    olo <- lo[order(names(lo))]
-    ohi <- hi[order(names(hi))]
-
-    out  <- rbind(
-      'True'          = op.vector,
-      '2.5% Estimate' = olo,
-      '50% Estimate'  = oest,
-      '97.5% Estimate'= ohi,
-      'Median-True'   = bias)
-
-    if (verbose) print(round(out, digits))
-    invisible(return(out))
-  }
-
-
-}
 
 # CheckRecovery.stanfit <- function(fit, p.vector, pars, digits = 2,
 #                                   verbose = TRUE)
@@ -864,36 +926,7 @@ CheckRecovery <- function(samples, p.vector, start, hyper = FALSE,
 #   invisible(out)
 # }
 
-#' @export
-h.check.recovery.dmc <- function(samples, ps=NULL,hyper=FALSE,verbose=TRUE,
-  digits=3, ptype=1)
-{
-  if (hyper) {
-    samples <- list(theta=attr(samples,"hyper")$phi[[ptype]])
-    samples$nmc <- dim(samples$theta)[3]
-    out <- check.recovery.dmc(samples,ps,digits=digits,verbose=verbose)
-  } else {
-    out <- samples
-    for (i in 1:length(samples)) {
-      out[[i]] <- check.recovery.dmc(samples[[i]], ps[i,], verbose=FALSE)
-      if (i==1) av <- out[[i]] else av <- out[[i]] + av
-    }
-    if (verbose) print(round(av/length(samples), digits=digits))
-  }
-  invisible(out)
-}
 
-
-#' @export
-gelman.diag.mpsrf <- function(mcmclist,autoburnin,transform)
-  # robust version ONLY USED IN sampling.R IN run.converge.dmc
-  # SHOULD BE ROLLED OUT OVER FOLLOWING FUNCITONS TO AVOID CRASHES OF
-  # AUTO PROCEDURES.
-{
-  gd <- try(gelman.diag(mcmclist,
-    autoburnin=autoburnin,transform=transform),silent=TRUE)
-  if (class(gd)=="try-error") Inf else gd$mpsrf
-}
 
 #' @export
 get.thin <- function(samples,hyper=FALSE) {

@@ -1439,8 +1439,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // run_hyper_dgmc
-List run_hyper_dgmc(List samples, unsigned int report, double pm, double hpm, double qm, double gammamult, unsigned int ngroup, unsigned int ncore);
-RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP hpmSEXP, SEXP qmSEXP, SEXP gammamultSEXP, SEXP ngroupSEXP, SEXP ncoreSEXP) {
+List run_hyper_dgmc(List samples, unsigned int report, double pm, double hpm, double qm, double hqm, double gammamult, unsigned int ngroup, unsigned int ncore);
+RcppExport SEXP _ggdmc_run_hyper_dgmc(SEXP samplesSEXP, SEXP reportSEXP, SEXP pmSEXP, SEXP hpmSEXP, SEXP qmSEXP, SEXP hqmSEXP, SEXP gammamultSEXP, SEXP ngroupSEXP, SEXP ncoreSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -1449,10 +1449,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type pm(pmSEXP);
     Rcpp::traits::input_parameter< double >::type hpm(hpmSEXP);
     Rcpp::traits::input_parameter< double >::type qm(qmSEXP);
+    Rcpp::traits::input_parameter< double >::type hqm(hqmSEXP);
     Rcpp::traits::input_parameter< double >::type gammamult(gammamultSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ngroup(ngroupSEXP);
     Rcpp::traits::input_parameter< unsigned int >::type ncore(ncoreSEXP);
-    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, report, pm, hpm, qm, gammamult, ngroup, ncore));
+    rcpp_result_gen = Rcpp::wrap(run_hyper_dgmc(samples, report, pm, hpm, qm, hqm, gammamult, ngroup, ncore));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1660,7 +1661,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_run_dgmc", (DL_FUNC) &_ggdmc_run_dgmc, 8},
     {"_ggdmc_run_dmc", (DL_FUNC) &_ggdmc_run_dmc, 7},
     {"_ggdmc_run_hyper_dmc", (DL_FUNC) &_ggdmc_run_hyper_dmc, 7},
-    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 8},
+    {"_ggdmc_run_hyper_dgmc", (DL_FUNC) &_ggdmc_run_hyper_dgmc, 9},
     {"_ggdmc_rtn_scalar", (DL_FUNC) &_ggdmc_rtn_scalar, 4},
     {"_ggdmc_dtnorm", (DL_FUNC) &_ggdmc_dtnorm, 6},
     {"_ggdmc_rtnorm", (DL_FUNC) &_ggdmc_rtnorm, 5},

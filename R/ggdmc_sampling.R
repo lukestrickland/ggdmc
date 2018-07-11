@@ -1,53 +1,13 @@
-### Prior Distributions -------------------------------------------------------
-##' @importFrom stats dbeta
-dbeta_lu <- function(x, shape1, shape2, lower, upper, log = FALSE) {
-  # Used with beta prior
-  if (log) {dbeta((x-lower)/(upper-lower),shape1,shape2,log=log)}
-  else {dbeta((x-lower)/(upper-lower),shape1,shape2,log=log)/(upper-lower)}
-}
-
-##' @importFrom stats rbeta
-rbeta_lu <- function(n, shape1, shape2, lower, upper) {
-  # Used with beta prior
-  lower + rbeta(n,shape1,shape2)*(upper-lower)
-}
-
-##' @importFrom stats dgamma
-dgamma_l <- function(x, shape, scale, lower, log = FALSE) {
-  # Used with gamma prior
-  dgamma(x-lower,shape=shape,scale=scale,log=log)
-}
-
-##' @importFrom stats rgamma
-rgamma_l <- function(n, shape, scale, lower) {
-  # Used with gamma prior
-  lower + rgamma(n,shape=shape,scale=scale)
-}
-
-##' @importFrom stats dlnorm
-dlnorm_l <- function(x, meanlog, sdlog, lower, log = FALSE) {
-  # Used with lognormal prior
-  dlnorm(x-lower,meanlog,sdlog,log=log)
-}
-
-##' @importFrom stats rlnorm
-rlnorm_l <- function(n, meanlog, sdlog, lower) {
-  # Used with lognormal prior
-  lower + rlnorm(n,meanlog,sdlog)
-}
-
-dconstant <- function(x, constant, log = FALSE) {
-  # Used with constant prior
-  if (log) rep(0, length(constant)) else
-    rep(1, length(constant))
-}
-
-rconstant <- function(n, constant, sd, lower) {
-  # Used by DMC's constant prior; sd and lower are redundant arguments
-  rep(constant, n)
-}
-
 ### Utilities  ----------------------------------------------------------------
+##' @export
+dbeta_lu <- function(x,shape1,shape2,lower,upper,log=FALSE)
+  # Used with beta prior
+{
+  if (!log) dbeta((x-lower)/(upper-lower),shape1,shape2,log=FALSE)/(upper-lower) else
+    dbeta((x-lower)/(upper-lower),shape1,shape2,log=TRUE) - log(upper-lower)
+}
+
+
 ##' @export
 GetPNames <- function(model) { return(names(attr(model, "p.vector"))) }
 
@@ -420,20 +380,31 @@ RestartHypersamples <- function(nmc, samples = NULL, thin = NULL, rp = .001,
 run_one <- function(samples, report, pm, qm, gammamult, ngroup, force,
   sampler, debug) {
 
-  ncore <- 1
+  ## message("Run one subject. Enforce ncore = 1.")
+  ncore  <- 1
   force  <- MakeForce(samples, force)
   pnames <- GetPNames(attr(samples$data, "model"))
+  nchain <- samples$n.chains
+
+  # if (nchain %% ngroup != 0) {
+  #   ngroup <- 5
+  #   samples$n.chains <- samples$ngroup * length(pnames)
+  #   cat("Ret ngroup = ", ngroup, " nchain = ", nchain, "\n")
+  # }
+
 
   if (is.null(attr(samples$data, "n.pda"))) attr(samples$data, "n.pda") <- 2^14
-  if (is.null(attr(samples$data, "bw")))    attr(samples$data, "bw")    <- .01
+  if (is.null(attr(samples$data, "bw")))    attr(samples$data, "bw")    <- .001
   if (is.null(attr(samples$data, "debug"))) attr(samples$data, "debug") <- 0
   if (is.null(attr(samples$data, "gpuid"))) attr(samples$data, "gpuid") <- 0
 
   if (sampler == "DGMC") {
     message("Run DGMC")
+
     out <- run_dgmc(samples, force, report, pm, qm, gammamult, ncore, ngroup)
   } else if (sampler == "DE-MCMC") {
     message("Run DE-MCMC")
+    if (debug) message("Use old DE-MCMC migration.")
     out <- run_dmc(samples, force, report, pm, gammamult, ncore, debug)
   } else {
     stop ("Sampler yet implemented")
@@ -551,8 +522,8 @@ run_many <- function(samples, report, ncore, pm, qm, gammamult, ngroup,
 #' ###############
 #' @export
 run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0, hpm = 0,
-  gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
-  debug = FALSE) {
+  hqm = 0, gamma.mult = 2.38, ngroup = 5, force = FALSE,
+  sampler = "DE-MCMC", debug = FALSE) {
   ## passing debug == TRUE to launch old migration operator
 
   hyper <- attr(samples, "hyper")
@@ -571,8 +542,8 @@ run <- function(samples, report = 1e2, ncore = 1, pm = 0, qm = 0, hpm = 0,
       out <- run_hyper_dmc(samples, report, pm, hpm, gamma.mult, ncore, debug)
     } else if (sampler == "DGMC") {
       message("Run Hierarchical DGMC")
-      out <- run_hyper_dgmc(samples, report, pm, hpm, qm, gamma.mult, ngroup,
-        ncore)
+      out <- run_hyper_dgmc(samples, report, pm, hpm, qm, hqm, gamma.mult,
+        ngroup, ncore)
     } else {
       out <- NULL
       message("Unknown sampler?")

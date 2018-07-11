@@ -14,8 +14,8 @@
 \title{Fit a fixed-effect or hierarchical Bayesian models}
 \usage{
 run(samples, report = 100, ncore = 1, pm = 0, qm = 0, hpm = 0,
-  gamma.mult = 2.38, ngroup = 6, force = FALSE, sampler = "DE-MCMC",
-  debug = FALSE)
+  hqm = 0, gamma.mult = 2.38, ngroup = 5, force = FALSE,
+  sampler = "DE-MCMC", debug = FALSE)
 
 CheckConverged(samples)
 
