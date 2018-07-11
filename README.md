@@ -1,8 +1,8 @@
 # Dynamic Models of Choice with Better Graphic Tools and Quicker Computations 
 
-The package, evolving from dynamic model of choice (_DMC_,
-Heathcote et al., 2018), is a generic tool for conducting hierarchical 
-Bayesian Computations in process / cognitive models.  
+_ggdmc_, evolving from dynamic model of choice (_DMC_, Heathcote et al., 2018),
+is a generic tool for conducting hierarchical Bayesian Computations, esp.  
+cognitive models.  
 
 1. Instead of using Gibbs or HMC, _ggdmc_ uses population-based MCMC (pMCMC) 
 samplers. A notable Gibbs example is the Python-based 
@@ -22,14 +22,15 @@ sampler, similar to random-walk Metropolis, which is less efficient than the
 _crossover_ operator. Mostly, pMCMC is efficient when a combination of 
 operatoers is applied together. 
 
-
 ## Getting Started
-Below is an example using the LBA Model (Brown & Heathcote, 2008). See
-the tutorials in Heathcote et al., (2018) for more. Note to be more explicit,
-the functions in _ggdmc_ usually informs the user what they are doing, such as
-_BuildModel_ below. The syntax differs slightly from DMC. Also note that the 
-sequence of parameters in a parameter vector (i.e., p.vector) must 
+Below is an example using the LBA Model (Brown & Heathcote, 2008). 
+Please see my [tutorials site](https://yxlin.github.io/) for more details. The R 
+functions, built in _ggdmc_ to interact with the user, usually informs what 
+they are doing, such as _BuildModel_. The syntax differs from DMC. Also note 
+that the sequence of parameters in a parameter vector (i.e., p.vector) must 
 strictly follow the sequence in the _p.vector_ reported by _BuildModel_. 
+Otherwise, _run_ function will throw a _stop_ to prevent you from fitting a
+model.
 
 ```
 require(ggdmc) 
@@ -83,8 +84,8 @@ dmi <- BindDataModel(dat, model)    ## dmi = data model instance (thanks to MG)
 ## Extract the mean and variabilities of parameters across the 40 participants
 ## ps <- attr(dat, "parameters")
 ##
-## Please use matrixStats package, which is even faster than C functions in 
-## base package
+## Please use matrixStats package, which is even faster than the C functions 
+## in base package
 ##
 ## round(matrixStats::colMeans2(ps), 2)
 ## round(matrixStats::colSds(ps), 2)
@@ -129,25 +130,17 @@ plot(pp.prior[[2]])
 npar <- length(GetPNames(model)); npar
 thin <- 2
 
-## Initiate 512 new hierarchical samples and specify (randomly) only the first 
+## Initiate 100 new hierarchical samples and specify (randomly) only the first 
 ## iteration.  Others are NA or -Inf. 
-## Note the number of chains is 54, a specific feature in population-based 
-## Markov chain Monte Carlo
-hsam0 <- ggdmc::init_newhier(512, dmi, p.prior, pp.prior, thin = thin, nchain = 54)
-
-## This will take about 1 hr
-## pm: probability of migration ; gammamult is a tuning parameter in the 
-## DE-MCMC sampler
-hsam0 <- ggdmc::run(hsam0, pm = .1)
-
-
+## Note the number of chains is 54, a specific feature in pMCMC
+hsam <- run(StartNewHypersamples(1e2, dmi, p.prior, pp.prior, thin = 1), 
+   report = 20, pm = .3, hpm = .3)
 ```
 
 ## How to pipe DMC samples to _ggdmc_ samplers 
-Diffusion-decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
+Diffusion decisoin model (Ratcliff & McKoon, 2008) is one of the most popular 
 cognitive models to fit choice RT data in cognitive psychology.  Here we 
-show two examples, one fitting the LBA model and the other fitting DDM 
-model.  The speed-up is up to 9 times quicker. 
+show two examples, one fitting the LBA model and the other fitting DDM.  
 
 
 ```
@@ -316,10 +309,7 @@ round(ps - tmp, 2)
 
 ## How to fit fixed-effect model with multiple participants
 
-
 ```
-rm(list = ls())
-setwd("~/Documents/ggdmc/tests/testthat/")
 require(ggdmc)
 
 ## Model Setup----------
@@ -376,32 +366,6 @@ sam <- run(RestartManysamples(512, sam, thin = 16), pm = migrationRate, ncore = 
 plot(sam[[6]])
 plot(sam)
 
-## a pMCMC specific check (under development)
-plot_subchain(sam[[1]], nchain = 2)
-plot_subchain(sam[[1]], nchain = 3)
-plot_subchain(sam[[1]], nchain = 4)
-
-for(i in 1:length(sam)) {
-  print(CheckConverged(sam[[i]]))
-  tmp1 <- CheckRecovery(sam[[i]], ps[i,])
-}
-
-
-tmp2 <- ggdmc::gelman.diag.dmc(sam)
-tmp3 <- ggdmc::theta.as.mcmc.list(sam[[1]], start=1, end=sam[[1]]$nmc,
-  subchain = TRUE)
-coda::gelman.diag(tmp3, autoburnin=TRUE, transform=FALSE)
-
-est <- summary(sam)
-round(colMeans(ps), 2)
-#    A            B.r1            B.r2              t0  mean_v.f1.true
-# 0.44            0.60            0.74            0.28            1.49
-# mean_v.f2.true    mean_v.f1.false mean_v.f2.false       sd_v.true
-# 0.99                         0.04            0.18            0.30
-
-save(dat, dmi, p.prior, model, sam, ntrial, npar, ps, file = "LBA_MSDMC.rda")
-
-
 
 ```
 
@@ -427,22 +391,23 @@ It has been observed in optimization works, using crossover operator
 
 hsam <- hsam0
 counter <- 1
-
 repeat {
-  hsam <- ggdmc::run(ggdmc::init_oldhier(512, hsam, .001, thin))
-  save(hsam, hsam0, dat, dmi, p.prior, pp.prior, file = "data/tmp.rda")
-
-  converged <- matrix(NA, nrow = length(hsam), ncol = 4)
-  for(i in 1:length(hsam)) converged[i,] <- ggdmc::CheckConverged(hsam[[i]])
+  hsam <- run(RestartHypersamples(5e2, hsam, thin = 32),
+    pm = .3, hpm = .3)
+  save(p.prior, pp.prior, ps, model, pop.prior, nsubject, ntrial, dat, dmi,
+    hsam, file = "data/race/rate-model-study3.rda")
+  rhats <- hgelman(hsam)
   counter <- counter + 1
   thin <- thin * 2
-  if (all(!converged) || counter > 1e2) {
-    break
-  }
+  if (all(rhats < 1.1) || counter > 1e2) break
 }
 
 
 ```
+
+Please see my [tutorials site, Cognitive Model](https://yxlin.github.io/), for 
+more.
+
 
 ## Prerequisites
  - R (>= 3.0.0)
@@ -459,25 +424,32 @@ repeat {
 
 ## Installing
 
-```
-From CRAN: install.packages("ggdmc")
-From source: install.packages("ggdmc_0.2.0.0.tar.gz", repos = NULL, type="source")
+From CRAN: 
 
-```
+> install.packages("ggdmc")
+
+From source: 
+
+> install.packages("ggdmc_0.2.2.3.tar.gz", repos = NULL, type="source")
+
+From GitHub (you will need to install _devtools_:
+
+> devtools::install_github(“yxlin/ggdmc”)
 
 ## Citation
 
 If you use this package, please cite the software, for example:
 
-Lin, Y.-S., & Heathcote, A (in preparation). Distributed Genetic Monte Carlo is 
-as Effective as Hamiltonian Monte Carlo in Fitting High Dimension Cognitive 
-Model. Manuscript in preparation.  Retrieved from https://github.com/TasCL/ggdmc
+Lin, Y.-S., & Heathcote, A. Population-based Monte Carlo is as Effective as 
+Hamiltonian Monte Carlo in Fitting High Dimension Cognitive Model. Manuscript 
+in preparation.  Manuscript in preparation. 
+Retrieved from https://github.com/yxlin/ggdmc
 
 ## Contributors
 
-The documentation, C++ codes, R helper functions and pacakging are developed by 
-Yi-Shin Lin. DMC is developed by Andrew Heathcote. Please report bugs to 
-[Yi-Shin Lin](mailto:yishin.lin@utas.edu.au). 
+The R documentation, tutorials, C++ codes, R helper functions and pacakging are 
+developed by Yi-Shin Lin. DMC is developed by Andrew Heathcote 
+(Heathcote et al., 2018). Please report bugs to [me](mailto:yishin.lin@utas.edu.au). 
 
 ## License
 

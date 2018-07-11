@@ -1240,9 +1240,6 @@ void MigrateDMCChains(arma::mat& usetheta, arma::vec& uselp, arma::vec& usell,
 
     k = subchains(i);
     theta_cur = theta.col(next_chain);
-    // for (size_t j = 0; j < npar; j++) {
-    //   theta_star(j) = theta(j, k) + R::runif(-rp, rp);
-    // }
 
     for (size_t j = 0; j < npar; j++) {
       theta_star(j) = theta(j, k) + R::rnorm(theta(j, k), rp);
