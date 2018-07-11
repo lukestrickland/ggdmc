@@ -25,7 +25,9 @@ operatoers is applied together.
 4. _ggdmc_ uses two parallel methods. First is via the _parallel_ package in R.
 This facilitates the computations for fitting many participants, namely 
 fixed-effects models.  The second is via OpenMP at C++ level. This facilitates 
-the computations for fitting hierarchical models. 
+the computations for fitting hierarchical models. For an advanced parallel 
+computation technique, please see my R package, 
+[_ppda_](https://github.com/yxlin/ppda), which implements CUDA language.
 
 ## Getting Started
 Below is an example using the LBA Model (Brown & Heathcote, 2008). 
