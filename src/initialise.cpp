@@ -214,10 +214,15 @@ List init_newhier(unsigned int nmc, List data, List pprior, List ppprior,
   unsigned int nsub = data.size();
 
   NumericVector modelAttr = data0.attr("model"); // To extract attributes
+  // Rcout << modelAttr;
+
   NumericVector pvec = modelAttr.attr("p.vector");
   std::vector<std::string> pnames = pvec.attr("names");
 
-  //std::vector<std::string> pnames = pprior.attr("names");
+  // for (size_t i = 0; i < pnames.size(); i++) {
+  //   Rcout << pnames[i] << std::endl;
+  // }
+
   arma::cube location(nchain, npar, nmc); location.fill(NA_REAL);
   arma::cube scale(nchain, npar, nmc); scale.fill(NA_REAL);
 
@@ -233,10 +238,14 @@ List init_newhier(unsigned int nmc, List data, List pprior, List ppprior,
   GetPrior(lprior, ldists, lp1, lp2, llower, lupper, llog);
   GetPrior(sprior, sdists, sp1, sp2, slower, supper, slog);
 
+
+  // Rcout <<" before init_newnon\n";
+
   // AH's lapply-style loop; cps subject list: nchain x npar; cps == thetas
   List out = init_newnonhier(nmc, data, pprior, rp, thin, nchain);
   arma::cube thetas = GetTheta0(out); // thetas: nsub x npar x nchain
-
+  //
+  // // Rcout <<" after init_newnon\n";
   arma::mat slp(nmc, nchain); slp.fill(-INFINITY);
   arma::mat hslp(nmc, nchain); hslp.fill(-INFINITY); // hyper sum log prior
   arma::mat hll(nmc, nchain); hll.fill(-INFINITY); // hyper log likelihood

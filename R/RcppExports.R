@@ -719,13 +719,13 @@ sumlogprior <- function(pvec, dists, p1, p2, lower, upper, islog) {
 }
 
 #' @export
-dpriorNV <- function(pvec, prior) {
-    .Call('_ggdmc_dpriorNV', PACKAGE = 'ggdmc', pvec, prior)
+dprior <- function(pvec, prior) {
+    .Call('_ggdmc_dprior', PACKAGE = 'ggdmc', pvec, prior)
 }
 
 #' @export
-summedlogpriorNV <- function(pvec, prior) {
-    .Call('_ggdmc_summedlogpriorNV', PACKAGE = 'ggdmc', pvec, prior)
+sumlogpriorNV <- function(pvec, prior) {
+    .Call('_ggdmc_sumlogpriorNV', PACKAGE = 'ggdmc', pvec, prior)
 }
 
 #' @rdname rprior
@@ -761,7 +761,7 @@ rprior_vec <- function(dists, p1, p2, lower, upper) {
 #'           muw1 = 1.51, muw2 = 3.69, t_delay = 0.31, sv = 1, swt = 0.5)
 #' gamma <- GetGamma(length(pVec), 2.38)
 #' @export
-GetGamma <- function(npar, gammamult = 2.38, hyper = FALSE) {
+GetGamma <- function(npar, gammamult, hyper = FALSE) {
     .Call('_ggdmc_GetGamma', PACKAGE = 'ggdmc', npar, gammamult, hyper)
 }
 

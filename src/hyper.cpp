@@ -4,6 +4,7 @@ using namespace Rcpp;
 arma::vec UpdatePriors(arma::mat theta, std::vector<std::string> dists,
   arma::mat p1, arma::mat p2, arma::vec lower, arma::vec upper,
   arma::uvec islog) {
+  // theta = nchain x npar
 
   unsigned int nchain = theta.n_rows;
   arma::vec out(nchain);
@@ -15,6 +16,33 @@ arma::vec UpdatePriors(arma::mat theta, std::vector<std::string> dists,
   return out ;
 }
 
+
+arma::mat UpdatePriors2(arma::cube theta, std::vector<std::string> dists,
+  arma::mat p1, arma::mat p2, arma::vec lower, arma::vec upper,
+  arma::uvec islog) {
+
+  unsigned int nchain = theta.n_slices;
+  unsigned int nsub   = theta.n_rows;
+  arma::vec pvec, location, scale;
+  // arma::mat out(nsub, nchain);
+  arma::mat out(nchain, nsub);
+  // p1 and p2 are usephi = nchain x npar
+  // arma::uvec rchains = arma::shuffle(arma::linspace<arma::uvec>(0, nchain - 1, nchain));
+  // unsigned int k0;
+
+  for (size_t i = 0; i < nchain; i++) {
+    // k0 = rchains(i);
+    location = arma::trans(p1.row(i));
+    scale    = arma::trans(p2.row(i));
+
+    for (size_t j = 0; j < nsub; j++) {
+      pvec = arma::trans(theta.slice(i).row(j));
+      out(i, j) = sumlogprior(pvec, dists, location, scale, lower, upper, islog);
+    }
+  }
+
+  return out;
+}
 
 //' Extract Start Posterior Sample
 //'
@@ -83,6 +111,24 @@ arma::cube GetTheta0(List samples) {
   unsigned int nchain = samples0["n.chains"];
   unsigned int start  = samples0["start"];  // Note start is an R index
   arma::cube out(nsub, npar, nchain);
+
+  for (size_t i = 0; i < nsub; i ++) {
+    List subject     = samples[i];
+    arma::cube theta = subject["theta"];    // nchain x npar x nmc
+    for (size_t j = 0; j < nchain; j++) {
+      out.slice(j).row(i) = theta.slice(start - 1).row(j);
+    }
+  }
+  return out; // nsub x npar x nchain
+}
+
+arma::cube GetTheta0_new(List samples) {
+  List samples0 = samples[0];
+  unsigned int nsub   = samples.size();
+  unsigned int npar   = samples0["n.pars"];
+  unsigned int nchain = samples0["n.chains"];
+  unsigned int start  = samples0["start"];  // Note start is an R index
+  arma::cube out(nchain, npar, nsub);
 
   for (size_t i = 0; i < nsub; i ++) {
     List subject     = samples[i];

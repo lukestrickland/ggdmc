@@ -164,17 +164,17 @@ double sumlogprior(arma::vec pvec, std::vector<std::string> dists,
   arma::uvec islog) {
 
   arma::vec den = dprior_(pvec, dists, p1, p2, lower, upper, islog);
-  // den.replace(arma::datum::inf, 1e10);  // replace each INFINITY with 1e-10
+  den.replace(arma::datum::inf, 1e-10);
   // den.replace(-arma::datum::inf, 1e-10);  // replace each -INFINITY with 1e-10
   // den.replace(arma::datum::nan, 1e-10);  // replace each nan with 1e-10
   double out = arma::accu(den);
-  if (std::isnan(out)) { out = -INFINITY; }
+  // if (std::isnan(out)) { out = -INFINITY; }
   return out;
 }
 
 //' @export
 // [[Rcpp::export]]
-NumericVector dpriorNV(NumericVector pvec, List prior) {
+NumericVector dprior(NumericVector pvec, List prior) {
   List l1;   // a container to loop through inner list
   std::vector<std::string> pnames = pvec.names() ;
   NumericVector out = NumericVector(pvec.size());
@@ -235,15 +235,12 @@ NumericVector dpriorNV(NumericVector pvec, List prior) {
 
 //' @export
 // [[Rcpp::export]]
-double summedlogpriorNV(arma::vec pvec, List prior) {
+double sumlogpriorNV(arma::vec pvec, List prior) {
   NumericVector pvecNV  = as<NumericVector>(wrap(pvec)) ;
   std::vector<std::string> pnames = prior.names() ;
   pvecNV.names() = pnames;
-  return sum(dpriorNV(pvecNV, prior)); // sum is in Rcpp
+  return sum(dprior(pvecNV, prior)); // sum is in Rcpp
 }
-
-
-
 
 //' @rdname rprior
 //' @export

@@ -1,13 +1,79 @@
-### Utilities  ----------------------------------------------------------------
+
+######### PRIOR and POSTERIOR ----
+
 ##' @export
 dbeta_lu <- function(x,shape1,shape2,lower,upper,log=FALSE)
-  # Used with beta prior
 {
+  # Used with beta prior
   if (!log) dbeta((x-lower)/(upper-lower),shape1,shape2,log=FALSE)/(upper-lower) else
     dbeta((x-lower)/(upper-lower),shape1,shape2,log=TRUE) - log(upper-lower)
 }
 
+##' @export
+rbeta_lu <- function(n,shape1,shape2,lower,upper)
+  # Used with beta prior
+{
+  lower + rbeta(n,shape1,shape2)*(upper-lower)
+}
 
+##' @export
+dgamma_l <- function(x, shape, scale, lower, upper, log=FALSE)
+  # Used with gamma prior
+{
+  dgamma(x - lower, shape = shape, scale = scale, log = log)
+}
+
+##' @export
+rgamma_l <- function(n, shape, scale, lower, upper)
+  # Used with gamma prior
+{
+  lower + rgamma(n,shape=shape,scale=scale)
+}
+
+##' @export
+dlnorm_l <- function(x,meanlog,sdlog,lower, upper, log=FALSE)
+  # Used with lognormal prior
+{
+  dlnorm(x-lower,meanlog,sdlog,log=log)
+}
+
+##' @export
+rlnorm_l <- function(n,meanlog,sdlog, lower, upper)
+  # Used with lognormal prior
+{
+  lower + rlnorm(n,meanlog,sdlog)
+}
+
+##' @export
+dcauchy.model <- function(x,location,scale,log=FALSE)
+  # Used with cauchy prior
+{
+  dcauchy(x,location,scale,log=log)
+}
+
+##' @export
+rcauchy.model <- function(n,location,scale)
+  # Used with cauchy prior
+{
+  rcauchy(n,location,scale)
+}
+
+##' @export
+dconstant <- function(x,constant,log=FALSE)
+  # Used with constant prior
+{
+  if (log) rep(0,length(constant)) else
+    rep(1,length(constant))
+}
+
+##' @export
+rconstant <- function(n,constant)
+  # Used with constant prior
+{
+  rep(constant,n)
+}
+
+### Utilities  ----------------------------------------------------------------
 ##' @export
 GetPNames <- function(model) { return(names(attr(model, "p.vector"))) }
 
@@ -1061,7 +1127,7 @@ MixTests <- function(samples, verbose=FALSE, cut = 1.01, split=TRUE) {
 #' @rdname run
 #' @export
 LengthTests <- function(samples, minN, nfun, verbose=FALSE) {
-  n <- do.call(nfun,list(effectiveSize.dmc(samples)))
+  n <- do.call(nfun,list(effectiveSize(samples)))
   fail <- n < minN
   if (verbose) {
     cat("Length check")

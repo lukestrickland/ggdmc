@@ -106,10 +106,10 @@ void InitializeSubjectRJ(List samples, arma::field<arma::umat>& rj) {
   unsigned int nchain= hyper["n.chains"];
   unsigned int nsub = samples.size();
   unsigned int startC = startR - 1;   // start_C == 0;
-  unsigned int nsamp = 1 + (nmc - startR) * thin;
+  // unsigned int nsamp = 1 + (nmc - startR) * thin;
 
   for (size_t i = 0; i < nsub; i++) {
-    rj(i) = arma::umat(nchain, nsamp, arma::fill::zeros);
+    rj(i) = arma::umat(nchain, nmc, arma::fill::zeros);
   }
 }
 
@@ -120,8 +120,8 @@ void InitializeOneSubject(List samples, arma::umat& rj) {
   unsigned int start_R = samples["start"];
   unsigned int thin   = samples["thin"];
   unsigned int store_i = start_R - 1;
-  unsigned int nsamp   = 1 + (nmc - start_R) * thin;
-  rj = arma::umat(nchain, nsamp, arma::fill::zeros);
+  // unsigned int nsamp   = 1 + (nmc - start_R) * thin;
+  rj = arma::umat(nchain, nmc, arma::fill::zeros);
 }
 
 void TransformSubjects(List samples,

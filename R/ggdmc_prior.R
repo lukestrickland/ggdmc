@@ -69,39 +69,41 @@ BuildPrior <- function(p1, p2,
         if (is.na(lower[i])) lower[i] <- 0
         if (is.na(upper[i])) upper[i] <- 1
         p <- c(p1[i],p2[i],lower[i],upper[i])
-        names(p) <- c("shape1","shape2","lower","upper")
+        names(p) <- c("shape1","shape2", "lower","upper")
         p <- as.list(p)
         attr(p, "dist") <- "beta_lu"
         p
       },
       gamma={
         if (is.na(lower[i])) lower[i] <- 0
-        p <- c(p1[i],p2[i],lower[i])
-        names(p) <- c("shape","scale","lower")
+        if (is.na(upper[i])) upper[i] <- Inf
+        p <- c(p1[i],p2[i],lower[i], upper[i])
+        names(p) <- c("shape", "scale","lower", "upper")
         p <- as.list(p)
         attr(p, "dist") <- "gamma_l"
         p
       },
       lnorm={
         if (is.na(lower[i])) lower[i] <- 0
-        p <- c(p1[i],p2[i],lower[i])
-        names(p) <- c("meanlog","sdlog","lower")
+        if (is.na(upper[i])) upper[i] <- Inf
+        p <- c(p1[i], p2[i], lower[i], upper[i])
+        names(p) <- c("meanlog","sdlog","lower", "upper")
         p <- as.list(p)
         attr(p, "dist") <- "lnorm_l"
         p
       },
       {
-        p <- c(p1[i], 0, -Inf)
-        names(p) <- c("constant", "sd", "lower")
+        p <- c(p1[i], 0, -Inf, Inf)
+        names(p) <- c("constant", "sd", "lower", "upper")
         p <- as.list(p)
         attr(p, "dist") <- "constant"
         p
       }
     )
     prior[[i]]$log <- TRUE
-    if (!name.untrans) attr(prior[[i]],"untrans") <- untrans[i] else
+    if (!name.untrans) attr(prior[[i]], "untrans") <- untrans[i] else
       if (is.na(untrans[names(p1)[i]]))
-        attr(prior[[i]],"untrans") <- "identity" else
+        attr(prior[[i]], "untrans") <- "identity" else
           attr(prior[[i]],"untrans") <- untrans[names(p1)[i]]
   }
 

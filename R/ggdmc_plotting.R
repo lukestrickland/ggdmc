@@ -60,8 +60,8 @@ plot_dist <- function(data, xlim=c(0, Inf), ylim=c(0, Inf), main=NULL,
   gpline <- aes_string(colour="C", linetype="S")
 
   ## facets <- facet_grid( formula(paste(". ~", "S")) )
-  p <- ggplot(x1, aes_string(x="x", y="y")) +
-    geom_line(mapping=gpline,  size=.7) +
+  p <- ggplot(x1, aes_string(x = "x", y = "y")) +
+    geom_line(mapping = gpline,  size=.7) +
     scale_y_continuous(name = "Density" ) +
     scale_x_continuous(name = "RT") +
     scale_color_grey(start=.3, end=.8) +
@@ -373,10 +373,12 @@ plot_many <- function(x, start, end, pll, save, den, subchain, nsubchain,
   }
 
   x0 <- NULL
+  subjectnames <- names(DT)
+
   for(i in 1:nsub) {
     tmp <- DT[[i]]
     if (subchain) tmp <- tmp[ tmp$Chain %in% chains, ]
-    tmp$s <- factor(i)
+    tmp$s <- factor(subjectnames[i])
     x0 <- rbind(x0, tmp)
   }
 
@@ -693,16 +695,17 @@ profile.dmc <- function(p.name, min.p, max.p, p.vector, data,
 #' ## require(ggplot2)
 #' ## p2 <- ggplot(d, aes(x = xpos, y = ypos)) + geom_line() +
 #' ##       facet_wrap(~gpvar, scales="free") + theme_bw(base_size =14)
-plot_prior <- function(i, p.prior, xlim=NA, natural=TRUE, n.point =128,
-                       trans=NA, save.dat=FALSE, ... )
+plot_prior <- function(i, prior, xlim = NA, natural = TRUE, npoint = 128,
+                       trans = NA, save = FALSE, ... )
 {
-  if (any(is.na(trans)))   ### Check 1 ###
-  {trans <- ifelse(natural, attr(p.prior[[i]], "untrans"), "identity")}
-  if (is.numeric(i)) i <- names(p.prior)[i]   ### Check 2 ###
+  if (any(is.na(trans))) {   ### Check 1 ###
+    trans <- ifelse(natural, attr(prior[[i]], "untrans"), "identity")
+  }
+  if (is.numeric(i)) i <- names(prior)[i]   ### Check 2 ###
   ## Stop the function running, if the parameters are out-of-range
-  if (!(i %in% names(p.prior))) stop("Parameter not in prior")
+  if (!(i %in% names(prior))) stop("Parameter not in prior")
   ## Finish checks. Calculate the data frame
-  p <- p.prior[[i]]    ## Save all parameter setting to another object called p
+  p <- prior[[i]]    ## Save all parameter setting to another object called p
 
   ## Do an educated guess for xlim
   ## xlim can be a scalar or vector. test if any of its elements is NA. If it
@@ -715,10 +718,8 @@ plot_prior <- function(i, p.prior, xlim=NA, natural=TRUE, n.point =128,
     ## upper directly (beta_lu); (3) use lower and a different arithmetic
     ## (gamma_l); (4) use lower and another different arithmetic (lnorm_l)
     xlim <- switch(attr(p, "dist"),
-                   tn = c(pmax(p$lower, p[[1]]-3*p[[2]]),
-                          pmin(p$upper, p[[1]]+3*p[[2]])),
-                   tnorm    = c(pmax(p$lower, p[[1]]-3*p[[2]]),
-                                pmin(p$upper, p[[1]]+3*p[[2]])),
+                   tnorm    = c(pmax(p$lower, p[[1]] - 3*p[[2]]),
+                                pmin(p$upper, p[[1]] + 3*p[[2]])),
                    beta_lu  = c(p$lower, p$upper),
                    gamma_l  = c(p$lower, p[[1]]*p[[2]]+3*sqrt(p[[1]])*p[[2]]),
                    lnorm_l  = c(p$lower, exp(p[[1]]+2*p[[2]])),
@@ -728,7 +729,7 @@ plot_prior <- function(i, p.prior, xlim=NA, natural=TRUE, n.point =128,
 
   ## Now we get xlim. Then we want to set all the x points for plotting.
   ## By default we plot 100 point (n.point = 1e2)
-  x <- seq(xlim[1], xlim[2], length.out = n.point)
+  x <- seq(xlim[1], xlim[2], length.out = npoint)
   p$x <- x
   p$log <- FALSE    ## Turn off logarithmic transformation
 
@@ -736,10 +737,10 @@ plot_prior <- function(i, p.prior, xlim=NA, natural=TRUE, n.point =128,
   ## 2. call a density function for a distribution to set y (density) value
   df <- data.frame(
     xpos  = do.call(trans, list(x = x)),
-    ypos  = do.call(paste("d", attr(p,"dist"), sep=""), p),
-    gpvar = rep( names(p.prior[i]), length(x)))
+    ypos  = do.call(paste0("d", attr(p, "dist")), p),
+    gpvar = rep( names(prior[i]), length(x)))
 
-  if (save.dat==TRUE) {
+  if (save) {
     return(df)
   } else {
     print(ggplot(df, aes_string(x="xpos", y="ypos")) + geom_line() +
@@ -749,11 +750,11 @@ plot_prior <- function(i, p.prior, xlim=NA, natural=TRUE, n.point =128,
 
 #' @rdname plot_prior
 #' @export
-plot.prior <- function(p.prior, save.dat=FALSE, ...) {
+plot.prior <- function(prior, save = FALSE, ...) {
   pD <- NULL
-  for(j in names(p.prior))
-    invisible(pD <- rbind(pD, plot_prior(i=j, p.prior=p.prior, save.dat=TRUE)))
-  if (save.dat) {
+  for(j in names(prior))
+    invisible(pD <- rbind(pD, plot_prior(i = j, prior = prior, save = TRUE)))
+  if (save) {
     return(pD)
   } else {
     p0 <- ggplot(pD, aes_string(x = "xpos", y = "ypos")) +

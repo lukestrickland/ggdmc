@@ -360,7 +360,7 @@ gelman <- function(x, hyper = FALSE, start = 1, end=NA, confidence = 0.95,
 ##' @export
 hgelman <- function(x, start = 1, end = NA, confidence = 0.95, transform = TRUE,
   autoburnin = FALSE, multivariate = TRUE, split = TRUE, subchain = FALSE,
-  nsubchain = 3, digits = 2, verbose=TRUE, ...) {
+  nsubchain = 3, digits = 2, verbose = TRUE, ...) {
 
   step1 <- lapply(gelman(x, start = start, end = end, confidence = confidence,
     transform = transform, autoburnin = autoburnin, multivariate = multivariate,
@@ -396,84 +396,70 @@ gelman.diag.mpsrf <- function(mcmclist, autoburnin, transform) {
   if (class(gd)=="try-error") Inf else gd$mpsrf
 }
 
-#' Effective Sample Size for Estimating the Mean
-#'
-#' \code{effectiveSize.dmc} calls \pkg{coda} effectiveSize to effective size
-#' for either single or multiple subjects. It can calculate at the data or
-#' hyper level, too.
-#'
-#' @param x a DMC sample
-#' @param hyper a switch to extract hyper attribute and calculate it
-#' @param digits print out how many digits
-#' @param start start iteration
-#' @param end end iteraton
-#' @importFrom coda effectiveSize
-#' @export
-#' @examples
-#' m1 <- model.dmc(
-#'      p.map     = list(a="1",v="F",z="1",d="1",sz="1",sv="1",t0="1",st0="1"),
-#'      match.map = list(M=list(s1="r1",s2="r2")),
-#'      factors   = list(S=c("s1","s2"),F=c("f1","f2")),
-#'      constants = c(st0=0,d=0),
-#'      responses = c("r1","r2"),
-#'      type      = "rd")
-#'
-#' pop.mean  <- c(a=1.15, v.f1=1.25, v.f2=1.85, z=.55,  sz=.15, sv=.32, t0=.25)
-#' pop.scale <- c(a=.10,  v.f1=.8,   v.f2=.5,   z=0.1,  sz=.05, sv=.05, t0=.05)
-#' pop.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", length(pop.mean)),
-#'   p1    = pop.mean,
-#'   p2    = pop.scale,
-#'   lower = c(0,-5, -5, 0, 0,   0, 0),
-#'   upper = c(5, 7,  7, 1, 0.5, 2, 2))
-#'
-#' dat  <- h.simulate.dmc(m1, nsim=30, ns=4, p.prior=pop.prior)
-#' mdi1 <- BindDataModel(dat, m1)
-#' ps   <- attr(dat,  "parameters")
-#' ### FIT RANDOM EFFECTS
-#' p.prior <- prior.p.dmc(
-#'   dists = c("tnorm","tnorm","tnorm","tnorm","tnorm", "tnorm", "tnorm"),
-#'   p1=pop.mean,
-#'   p2=pop.scale*5,
-#'   lower=c(0,-5, -5, 0, 0, 0, 0),
-#'   upper=c(5, 7,  7, 2, 2, 2, 2))
-#'
-#' mu.prior <- prior.p.dmc(
-#'   dists = c("tnorm","tnorm","tnorm","tnorm","tnorm", "tnorm", "tnorm"),
-#'   p1=pop.mean,
-#'   p2=pop.scale*5,
-#'   lower=c(0,-5, -5, 0, 0, 0, 0),
-#'   upper=c(5, 7,  7, 2, 2, 2, 2))
-#'
-#' sigma.prior <- prior.p.dmc(
-#'   dists = rep("beta", length(p.prior)),
-#'   p1=c(a=1, v.f1=1,v.f2 = 1, z=1, sz=1, sv=1, t0=1),p2=c(1,1,1,1,1,1,1),
-#'   upper=c(2,2,2,2,2, 2, 2))
-#'
-#' pp.prior <- list(mu.prior, sigma.prior)
-#'
-#' hsamples0 <- h.samples.dmc(nmc=10, p.prior=p.prior, pp.prior=pp.prior,
-#'   data=mdi1, thin=1)
-#' hsamples0 <- h.run.dmc(hsamples0)
-#' es <- effectiveSize.dmc(hsamples0)
-#' hes <- effectiveSize.dmc(hsamples0, hyper=TRUE)
-effectiveSize.dmc <- function(x, hyper=FALSE, digits=0,start=1,end=NA)
-{
+##' @importFrom coda effectiveSize
+##' @export
+effectiveSize_hyper <- function(x, start, end, digits) {
+  hyper <- attr(x, "hyper")
+  if (is.na(end)) end <- hyper$nmc
+  phimcmc <- phi.as.mcmc.list(hyper, start = start, end = end)
+  out <- coda::effectiveSize(phimcmc)
+  print(round(out, digits))
+  invisible(return(out))
+}
+
+##' @importFrom coda effectiveSize
+##' @export
+effectiveSize_many <- function(x, start, end, verbose) {
+  out <- lapply(x, function(xx) {
+    if (is.na(end)) end <- xx$nmc
+    coda::effectiveSize(theta.as.mcmc.list(xx, start=start, end=end))
+  })
+
+  if (verbose) {
+    p1 <- round(apply(data.frame(out), 1, mean))
+    p2 <- round(apply(data.frame(out), 1, sd))
+    p3 <- round(apply(data.frame(out), 1, max))
+    p4 <- round(apply(data.frame(out), 1, min))
+    print_out <- rbind(p1, p2, p3, p4)
+    rownames(print_out) <- c("MEAN", "SD", "MAX", "MIN")
+    print(print_out)
+  }
+  invisible(return(out))
+}
+
+##' @importFrom coda effectiveSize
+##' @export
+effectiveSize_one <- function(x, start, end, digits) {
+  if (is.na(end)) end <- x$nmc
+  out <- coda::effectiveSize(theta.as.mcmc.list(x, start = start, end = end))
+  print(round(out, digits))
+  invisible(return(out))
+}
+
+##' Effective Sample Size for Estimating the Mean
+##'
+##' \code{effectiveSize} calls \pkg{coda} effectiveSize to effective size
+##' for either single or multiple subjects. It can calculate at the data or
+##' hyper level, too.
+##'
+##' @param x a samples object
+##' @param hyper a switch to extract hyper attribute and calculate it
+##' @param start starting iteration
+##' @param end ending iteraton
+##' @param digits printing digits
+##' @export
+##' @examples
+##' #################################40
+##' ## effectiveSize example
+##' #################################40
+effectiveSize <- function(x, hyper = FALSE, start = 1, end = NA,
+  digits = 0, verbose = FALSE) {
   if (hyper) {
-    hyper0 <- attr(x, "hyper")
-    if (is.na(end)) end <- hyper0$nmc
-    round(effectiveSize(phi.as.mcmc.list(attr(x, "hyper"), start=start,
-      end=end)), digits)
+    out <- effectiveSize_hyper(x, start, end, digits)
+  } else if (!is.null(x$theta)){
+    out <- effectiveSize_one(x, start, end, digits)
   } else {
-      if (!is.null(x$theta)) {
-        if (is.na(end)) end <- x$nmc
-        round(effectiveSize(theta.as.mcmc.list(x, start=start,end=end)),digits)
-      } else
-          lapply(x, function(xx){
-            if (is.na(end)) end <- xx$nmc
-            round(effectiveSize(theta.as.mcmc.list(xx, start=start, end=end)),
-              digits)
-          })
+    out <- effectiveSize_many(x, start, end, verbose)
   }
 }
 
@@ -499,13 +485,14 @@ summary_hyper <- function(object, start, end, hmeans, hci, prob, digits) {
     h1 <- hest$statistics[1:npar, "Mean"]
     h2 <- hest$statistics[(1+npar):(2*npar), "Mean"]
     out <- round(rbind(h1, h2), digits)
+    colnames(out) <- hyper$p.names
 
   } else if (hci) {
     quan <- hest$quantiles[, prob]
     conf <- cbind( quan[1:npar, ], quan[(1+npar):(2*npar), ])
     parname_noh <- unlist(strsplit(dimnames(conf)[[1]], ".h1"))
     rep_percent <- dimnames(conf)[[2]]
-    per_names <- paste(c("L", "S"), colnames(conf))
+    per_names <- paste(rep(c("L", "S"), each = length(prob)), colnames(conf))
     dimnames(conf) <- list(parname_noh, per_names)
     out <- round(conf, digits)
   } else {
@@ -559,8 +546,9 @@ summary_recoverone <- function(object, start, end, ps, digits, verbose) {
   if (missing(end)) end <- object$end
 
   qs <- summary_one(object, start, end)$quantiles
+  parnames <- dimnames(qs)[[1]]
 
-  if (!is.null(ps) && (!all(dimnames(qs)[[1]] %in% names(ps))))
+  if (!is.null(ps) && (!all(parnames %in% names(ps))))
     stop("Names of p.vector do not match parameter names in samples")
 
   est  <- qs[names(ps), "50%"]
@@ -614,7 +602,7 @@ summary_recoverhyper <- function(object, start, end, ps, type, digits,
   verbose) {
 
   hyper <- attr(object, "hyper")
-  samples <- list(theta = attr(hsam, "hyper")$phi[[type]])
+  samples <- list(theta = hyper$phi[[type]])
   samples$n.chains <- hyper$n.chains
   samples$nmc <- hyper$nmc
   samples$thin <- hyper$thin

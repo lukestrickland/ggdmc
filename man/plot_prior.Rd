@@ -5,28 +5,28 @@
 \alias{plot.prior}
 \title{Plot Prior Distributions}
 \usage{
-plot_prior(i, p.prior, xlim = NA, natural = TRUE, n.point = 128,
-  trans = NA, save.dat = FALSE, ...)
+plot_prior(i, prior, xlim = NA, natural = TRUE, npoint = 128,
+  trans = NA, save = FALSE, ...)
 
-\method{plot}{prior}(p.prior, save.dat = FALSE, ...)
+\method{plot}{prior}(prior, save = FALSE, ...)
 }
 \arguments{
 \item{i}{an integer or a character string indicating to plot which parameter}
-
-\item{p.prior}{a list of list storing prior setting.}
 
 \item{xlim}{set the range of on x axis. This is usually the range for each
 parameter. Default is NA.}
 
 \item{natural}{default TRUE}
 
-\item{n.point}{default to plot 128}
-
 \item{trans}{default NA. trans can be a scalar or vector.}
 
-\item{save.dat}{whether to save the data out}
-
 \item{...}{other plotting arguments passing throught dot dot dot.}
+
+\item{p.prior}{a list of list storing prior setting.}
+
+\item{n.point}{default to plot 128}
+
+\item{save.dat}{whether to save the data out}
 }
 \description{
 \code{plot_prior} plots the i'th member of the list created by

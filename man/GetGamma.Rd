@@ -4,7 +4,7 @@
 \alias{GetGamma}
 \title{Generate a Gamma Vector}
 \usage{
-GetGamma(npar, gammamult = 2.38, hyper = FALSE)
+GetGamma(npar, gammamult, hyper = FALSE)
 }
 \arguments{
 \item{npar}{number of parameters.}

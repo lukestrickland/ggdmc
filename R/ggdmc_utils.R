@@ -674,62 +674,54 @@ ppp.dmc <- function(samples,fun=function(x){mean(x$RT)}, n.post=500,
 #   return(list( df, tbl_df(x0)))
 # }
 
-#' Inspect Prior Distribution Settings
-#'
-#' a convenient function to rearrange \code{p.prior} or an element in a
-#' \code{pp.prior} as a data frame for inspection.  Do not be confused by
-#' another function called View (uppercase) in \pkg{utils} package.
-#'
-#' @param p.prior a prior distribution list, usually created by
-#' \code{prior.p.dmc}
-#' @return a data frame listing prior distribution settings
-#' @export
-#' @examples
-#' pop.mean  <- c(a=1,  v.f1=1,  v.f2=.2, z=.5, sz=.3,  sv.f1=.25, sv.f2=.23,
-#'                t0=.3)
-#' pop.scale <- c(a=.2, v.f1=.2, v.f2=.2, z=.1, sz=.05, sv.f1=.05, sv.f2=.05,
-#'                t0=.05)
-#'
-#' p.prior <- prior.p.dmc(
-#'   dists = rep("tnorm", 8),
-#'   p1    = pop.mean,
-#'   p2    = pop.scale,
-#'   lower = c(0,-5, -5, 0, 0, 0, 0,0),
-#'   upper = c(2, 5, 5, 1, 2, 2, 1, 1))
-#'
-#' view(p.prior)
-#' ##       mean   sd lower upper log  dist  untrans
-#' ## a        1  0.2     0     2   1 tnorm identity
-#' ## v.f1     1  0.2    -5     5   1 tnorm identity
-#' ## v.f2   0.2  0.2    -5     5   1 tnorm identity
-#' ## z      0.5  0.1     0     1   1 tnorm identity
-#' ## sz     0.3 0.05     0     2   1 tnorm identity
-#' ## sv.f1 0.25 0.05     0     2   1 tnorm identity
-#' ## sv.f2 0.23 0.05     0     1   1 tnorm identity
-#' ## t0     0.3 0.05     0     1   1 tnorm identity
-view <- function(p.prior)
-{
-  ncol <- length(p.prior[[1]]) + 2;
-  npar <- length(p.prior);
+##' Print Prior Distribution
+##'
+##' a convenient function to rearrange \code{p.prior} or an element in a
+##' \code{pp.prior} as a data frame for inspection.
+##'
+##' @param x a prior distribution list, usually created by
+##' \code{BuildPrior}
+##' @return a data frame listing prior distribution settings
+##' @examples
+##' pop.mean  <- c(a=1,  v.f1=1,  v.f2=.2, z=.5, sz=.3,  sv.f1=.25, sv.f2=.23,
+##'                t0=.3)
+##' pop.scale <- c(a=.2, v.f1=.2, v.f2=.2, z=.1, sz=.05, sv.f1=.05, sv.f2=.05,
+##'                t0=.05)
+##'
+##' p.prior <- BuildPrior(
+##'   dists = rep("tnorm", 8),
+##'   p1    = pop.mean,
+##'   p2    = pop.scale,
+##'   lower = c(0, -5, -5, 0, 0, 0, 0, 0),
+##'   upper = c(2,  5,  5, 1, 2, 2, 1, 1))
+##'
+##' print(p.prior)
+##' @export
+print.prior <- function(x, ...) {
+
+  ncol <- 7
+  # ncol <- 7length(x[[1]]) + 2;
+  npar <- length(x);
   bucket  <- matrix(numeric(npar*ncol), npar);
 
   for(i in 1:npar) {
-    add1    <- attr(p.prior[[i]], "dist");
-    add2    <- attr(p.prior[[i]], "untrans");
+    add1    <- attr(x[[i]], "dist");
+    add2    <- attr(x[[i]], "untrans");
     if (add1 == "constant") {
-      tmp <- unlist(p.prior[[i]])
+      tmp <- unlist(x[[i]])
       rowObj  <- c(c(tmp[1], 0, NA, NA, tmp[2]), add1, add2);
     } else if (add1 == "gamma_l") {
-      rowObj <- c(rowObj[1:3], Inf, rowObj[4:6])
+      tmp <- unlist(x[[i]])
+      rowObj <- c(tmp[1:5], "gamma_l", add2)
     } else {
-      rowObj  <- c(unlist(p.prior[[i]]), add1, add2);
+      rowObj  <- c(unlist(x[[i]]), add1, add2);
     }
     bucket[i,] <- rowObj
   }
 
   out <- data.frame(bucket)
   names(out) <- c("p1", "p2", "lower", "upper", "log", "dist", "untrans")
-  rownames(out) <- names(p.prior)
+  rownames(out) <- names(x)
   return(out)
 }
 
@@ -848,7 +840,8 @@ getboundsR <- function(data) {
 ##' @export
 CheckRJ <- function(object, verbose = TRUE, ...) {
   nchain <- object$n.chains
-  nsamp <- 1 + (object$nmc - object$start) * object$thin;
+  # nsamp <- 1 + (object$nmc - object$start) * object$thin;
+  nsamp <- object$nmc
 
   for(i in 1:nchain) {
     mr <- sum(object$rejection_rate[i, 2:nsamp] == 2 |

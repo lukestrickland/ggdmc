@@ -1274,27 +1274,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dpriorNV
-NumericVector dpriorNV(NumericVector pvec, List prior);
-RcppExport SEXP _ggdmc_dpriorNV(SEXP pvecSEXP, SEXP priorSEXP) {
+// dprior
+NumericVector dprior(NumericVector pvec, List prior);
+RcppExport SEXP _ggdmc_dprior(SEXP pvecSEXP, SEXP priorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type pvec(pvecSEXP);
     Rcpp::traits::input_parameter< List >::type prior(priorSEXP);
-    rcpp_result_gen = Rcpp::wrap(dpriorNV(pvec, prior));
+    rcpp_result_gen = Rcpp::wrap(dprior(pvec, prior));
     return rcpp_result_gen;
 END_RCPP
 }
-// summedlogpriorNV
-double summedlogpriorNV(arma::vec pvec, List prior);
-RcppExport SEXP _ggdmc_summedlogpriorNV(SEXP pvecSEXP, SEXP priorSEXP) {
+// sumlogpriorNV
+double sumlogpriorNV(arma::vec pvec, List prior);
+RcppExport SEXP _ggdmc_sumlogpriorNV(SEXP pvecSEXP, SEXP priorSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type pvec(pvecSEXP);
     Rcpp::traits::input_parameter< List >::type prior(priorSEXP);
-    rcpp_result_gen = Rcpp::wrap(summedlogpriorNV(pvec, prior));
+    rcpp_result_gen = Rcpp::wrap(sumlogpriorNV(pvec, prior));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1649,8 +1649,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ggdmc_n1PDF_plba3", (DL_FUNC) &_ggdmc_n1PDF_plba3, 14},
     {"_ggdmc_dprior_", (DL_FUNC) &_ggdmc_dprior_, 7},
     {"_ggdmc_sumlogprior", (DL_FUNC) &_ggdmc_sumlogprior, 7},
-    {"_ggdmc_dpriorNV", (DL_FUNC) &_ggdmc_dpriorNV, 2},
-    {"_ggdmc_summedlogpriorNV", (DL_FUNC) &_ggdmc_summedlogpriorNV, 2},
+    {"_ggdmc_dprior", (DL_FUNC) &_ggdmc_dprior, 2},
+    {"_ggdmc_sumlogpriorNV", (DL_FUNC) &_ggdmc_sumlogpriorNV, 2},
     {"_ggdmc_rprior_scalar", (DL_FUNC) &_ggdmc_rprior_scalar, 1},
     {"_ggdmc_rprior_mat", (DL_FUNC) &_ggdmc_rprior_mat, 2},
     {"_ggdmc_rprior_vec", (DL_FUNC) &_ggdmc_rprior_vec, 5},

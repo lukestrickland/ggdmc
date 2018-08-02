@@ -6,6 +6,10 @@ arma::vec UpdatePriors(arma::mat theta, std::vector<std::string> dists,
   arma::mat p1, arma::mat p2, arma::vec lower, arma::vec upper,
   arma::uvec islog);
 
+arma::mat UpdatePriors2(arma::cube theta, std::vector<std::string> dists,
+  arma::mat p1, arma::mat p2, arma::vec lower, arma::vec upper,
+  arma::uvec islog);
+
 double sumloghprior(arma::vec location, arma::vec scale,
   std::vector<std::string> ldists, std::vector<std::string> sdists,
   arma::vec lp1, arma::vec sp1, arma::vec lp2, arma::vec sp2, arma::vec llower,
